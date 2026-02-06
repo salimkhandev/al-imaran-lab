@@ -1,0 +1,66 @@
+{
+  "name": "al-imaran-lab",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "scripts": {
+    "dev": "vite",
+    "start": "set NODE_ENV=development && electron .",
+    "build": "vite build",
+    "pack": "pnpm run build && electron-builder --dir",
+    "dist": "pnpm run build && electron-builder",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "build": {
+    "appId": "com.alimaranlab.app",
+    "productName": "Al-Imaran Lab",
+    "icon": "src/assets/app-logo.png",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "main.js",
+      "preload.js",
+      "database.js",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "database.db",
+        "to": "database.db"
+      }
+    ],
+    "win": {
+      "icon": "src/assets/app-logo.jpg",
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "Al-Imaran Lab"
+    }
+  },
+  "keywords": [],
+  "author": "Al-Imaran",
+  "license": "ISC",
+  "packageManager": "pnpm@10.27.0",
+  "devDependencies": {
+    "@electron/rebuild": "^4.0.3",
+    "@tailwindcss/vite": "^4.1.18",
+    "@vitejs/plugin-react": "^5.1.3",
+    "electron": "^40.1.0",
+    "electron-builder": "^26.7.0",
+    "electron-rebuild": "^3.2.9",
+    "tailwindcss": "^4.1.18",
+    "vite": "^7.3.1"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.6.2",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
+  }
+}

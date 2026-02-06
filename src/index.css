@@ -1,0 +1,203 @@
+@import "tailwindcss";
+
+@theme {
+    --font-outfit: "Outfit", sans-serif;
+    --font-inter: "Inter", sans-serif;
+}
+
+@layer base {
+    body {
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        color: #0f172a;
+        background-color: #f8fafc;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        font-family: var(--font-inter);
+    }
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #e2e8f0;
+    border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #cbd5e1;
+}
+
+/* Glassmorphism effects */
+.glass {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+/* Subtitle letter spacing */
+.tracking-ultra {
+    letter-spacing: 0.3em;
+}
+
+/* Animation for loading states */
+@keyframes pulse-soft {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.7;
+    }
+}
+
+.animate-pulse-soft {
+    animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* A4 Page Simulation */
+.a4-container {
+    background: #f1f5f9;
+    padding: 40px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 30px;
+    min-height: 100vh;
+    transform: scale(0.9);
+    transform-origin: top center;
+}
+
+.a4-page {
+    width: 210mm;
+    min-height: 297mm;
+    background: white;
+    padding: 20mm;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    color: #1e293b;
+    font-family: 'Inter', sans-serif;
+}
+
+@media print {
+    @page {
+        size: A4;
+        margin: 0;
+    }
+
+    html,
+    body {
+        height: 100%;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: white !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    /* HIDE THE UI FRAME */
+    aside,
+    .no-print,
+    button,
+    .hamburger-toggle {
+        display: none !important;
+    }
+
+    main {
+        padding: 0 !important;
+        margin: 0 !important;
+        background: white !important;
+        display: block !important;
+        width: 100% !important;
+    }
+
+    .a4-container {
+        padding: 0 !important;
+        margin: 0 !important;
+        background: white !important;
+        display: block !important;
+        width: 100% !important;
+        min-height: auto !important;
+        transform: none !important;
+    }
+
+    .a4-page {
+        width: 210mm !important;
+        height: 297mm !important;
+        margin: 0 !important;
+        padding: 20mm !important;
+        box-shadow: none !important;
+        border: none !important;
+        background: white !important;
+        page-break-after: always;
+        overflow: hidden;
+        position: relative !important;
+    }
+
+    /* STRIP BACKGROUNDS AND BORDERS FROM UI ELEMENTS IN PRINT */
+    .bg-slate-50,
+    .bg-white {
+        background-color: transparent !important;
+    }
+
+    .bg-slate-900,
+    .report-table-header {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    /* Vanish all non-critical UI borders */
+    .border-slate-50,
+    .border-slate-100,
+    .border-slate-200 {
+        border-color: transparent !important;
+        border-width: 0 !important;
+    }
+
+    /* INPUT RESET FOR PRINT: Make inputs look like static text */
+    input {
+        border: none !important;
+        outline: none !important;
+        background: transparent !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        color: inherit !important;
+        appearance: none;
+    }
+
+    /* Maintain vital report borders */
+    .border-slate-900,
+    .border-b-4,
+    .border-y-2,
+    .border-t {
+        border-color: #0f172a !important;
+    }
+
+    .report-table-header {
+        background-color: #f8fafc !important;
+        border-top: 2px solid #0f172a !important;
+        border-bottom: 2px solid #0f172a !important;
+    }
+}
+
+/* Force page breaks for elements */
+.page-break {
+    page-break-before: always;
+}
