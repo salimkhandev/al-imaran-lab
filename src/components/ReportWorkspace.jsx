@@ -603,10 +603,7 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
                             <span className="font-black text-slate-900 uppercase text-[7px] tracking-widest">Time:</span>
                             <input type="text" value={patientInfo.time || ""} readOnly={isHistoryMode} onChange={(e) => handlePatientChange('time', e.target.value)} className={`font-black text-slate-900 uppercase text-[10px] bg-transparent outline-none w-full border-b border-transparent transition-all px-1 ${!isHistoryMode && 'focus:border-slate-900 hover:bg-slate-50'}`} />
                         </div>
-                        <div className="grid grid-cols-[80px_1fr] items-center">
-                            <span className="font-black text-slate-900 uppercase text-[7px] tracking-widest">Lab No:</span>
-                            <input type="text" value={patientInfo.labNo} readOnly={isHistoryMode} onChange={(e) => handlePatientChange('labNo', e.target.value)} className={`font-black text-slate-900 uppercase text-[10px] bg-transparent outline-none w-full border-b border-transparent transition-all px-1 ${!isHistoryMode && 'focus:border-slate-900 hover:bg-slate-50'}`} placeholder="LAB-001" />
-                        </div>
+
                         <div className="grid grid-cols-[80px_1fr] items-center">
                             <span className="font-black text-slate-900 uppercase text-[7px] tracking-widest">Ref By:</span>
                             <input type="text" value={patientInfo.refBy} readOnly={isHistoryMode} onChange={(e) => handlePatientChange('refBy', e.target.value)} className={`font-black text-slate-900 uppercase text-[10px] bg-transparent outline-none w-full border-b border-transparent transition-all px-1 ${!isHistoryMode && 'focus:border-slate-900 hover:bg-slate-50'}`} />
