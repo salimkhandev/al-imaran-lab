@@ -469,7 +469,7 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
         const pages = [];
         let currentHeight = 0;
         const HEIGHT_LIMIT = 780; // Calibrated for 20mm margins + clinical letterhead
-        const SIGNATURE_HEIGHT = 180; // Space needed for signature area
+        const SIGNATURE_HEIGHT = 0; // Signatures removed as per user request
 
         if (activeReportLines.length === 0) {
             // Return a single empty page if no tests added
@@ -754,36 +754,8 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
                     )}
                 </div>
 
-                <div className="mt-auto px-4">
-                    {/* SIGNATURE AREA - Only on last page */}
-                    {pageIdx === pages.length - 1 && (
-                        <div className="grid grid-cols-2 gap-16 pt-16 mb-8 text-center no-print-inputs">
-                            <div className="border-t border-slate-900 pt-2">
-                                <p className="text-[10px] font-black uppercase text-slate-900">Dr. Sarah Rahman</p>
-                                <p className="text-[7px] font-bold text-slate-500 uppercase">MBBS, MD (Pathology)</p>
-                                <p className="text-[7px] font-bold text-slate-500 uppercase">Senior Consultant Pathologist</p>
-                            </div>
-                            <div className="border-t border-slate-900 pt-2">
-                                <p className="text-[10px] font-black uppercase text-slate-900">Dr. Tanvir Ahmed</p>
-                                <p className="text-[7px] font-bold text-slate-500 uppercase">Medical Director</p>
-                                <p className="text-[7px] font-bold text-slate-500 uppercase">Al-Imaran Laboratory</p>
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="pt-2 border-t border-slate-200 text-center">
-                        <div className="flex items-center justify-between text-[6px] font-black text-slate-400 uppercase tracking-widest">
-                            <div className="flex items-center gap-4">
-                                {pageIdx === pages.length - 1 && (
-                                    <>
-                                        <span>End of Report</span>
-                                        <div className="w-1 h-1 bg-slate-200 rounded-full"></div>
-                                    </>
-                                )}
-                                <span>Page {pageIdx + 1} of {pages.length}</span>
-                            </div>
-                        </div>
-                    </div>
+                <div className="mt-auto pb-8">
+                    {/* Footer removed as per user request */}
                 </div>
             </div>
         ));
@@ -954,7 +926,7 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
                                         </button>
 
                                         {activeMenuId === t.id && (
-                                            <div className={`absolute right-0 ${index > filteredTemplates.length - 4 ? 'bottom-full mb-1' : 'top-full mt-1'} w-32 bg-white border border-slate-200 shadow-xl rounded-xl py-1.5 z-50 overflow-hidden animate-in zoom-in-95 duration-200`}>
+                                            <div className={`absolute right-0 ${(index >= 3 && index > filteredTemplates.length - 4) ? 'bottom-full mb-1' : 'top-full mt-1'} w-32 bg-white border border-slate-200 shadow-xl rounded-xl py-1.5 z-50 overflow-hidden animate-in zoom-in-95 duration-200`}>
                                                 <div className="flex items-center justify-between px-3 py-1 bg-slate-50 border-b border-slate-100 mb-1">
                                                     <span className="text-[5px] font-black text-slate-400 uppercase tracking-widest">Options</span>
                                                     <button
