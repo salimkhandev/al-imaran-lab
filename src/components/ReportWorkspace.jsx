@@ -727,7 +727,7 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
                                             readOnly={isHistoryMode}
                                             rows={1}
                                             onChange={(e) => handleLineChange(idx, 'result', e.target.value)}
-                                            className={`w-full text-right border-b outline-none font-black bg-transparent transition-all resize-none overflow-hidden py-0.5 ${isHistoryMode ? 'border-transparent' : 'border-slate-100 hover:border-slate-300'} ${checkAbnormal(line).isAbnormal ? 'text-rose-600' : 'text-black'} ${(line.result || "").length > 25 ? 'text-[7px] leading-[1.1]' :
+                                            className={`w-full text-right border-b outline-none font-black bg-transparent transition-all resize-none overflow-hidden py-0.5 ${isHistoryMode ? 'border-transparent' : 'border-slate-100 hover:border-slate-300'} ${checkAbnormal(line).isAbnormal ? 'text-rose-600 print:text-black' : 'text-black'} ${(line.result || "").length > 25 ? 'text-[7px] leading-[1.1]' :
                                                 (line.result || "").length > 15 ? 'text-[9px] leading-tight' :
                                                     'text-[11px]'
                                                 }`}
@@ -774,8 +774,12 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
                     <div className="pt-2 border-t border-slate-200 text-center">
                         <div className="flex items-center justify-between text-[6px] font-black text-slate-400 uppercase tracking-widest">
                             <div className="flex items-center gap-4">
-                                <span>End of Report</span>
-                                <div className="w-1 h-1 bg-slate-200 rounded-full"></div>
+                                {pageIdx === pages.length - 1 && (
+                                    <>
+                                        <span>End of Report</span>
+                                        <div className="w-1 h-1 bg-slate-200 rounded-full"></div>
+                                    </>
+                                )}
                                 <span>Page {pageIdx + 1} of {pages.length}</span>
                             </div>
                         </div>
