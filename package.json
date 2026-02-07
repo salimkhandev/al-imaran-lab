@@ -32,7 +32,7 @@
       }
     ],
     "win": {
-      "icon": "src/assets/app-logo.jpg",
+      "icon": "src/assets/app-logo.png",
       "target": [
         "nsis"
       ]

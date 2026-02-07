@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import appLogo from '../assets/app-logo.jpg';
+import appLogo from '../assets/app-logo.png';
 import docLogo from '../assets/doc-logo.png';
 
 export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {

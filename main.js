@@ -4,7 +4,7 @@ const db = require('./database');
 
 function createWindow() {
     const win = new BrowserWindow({
-        icon: path.join(__dirname, 'src/assets/app-logo.jpg'),
+        icon: path.join(__dirname, 'src/assets/app-logo.png'),
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),
             contextIsolation: true,
