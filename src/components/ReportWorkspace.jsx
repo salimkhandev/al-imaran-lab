@@ -754,8 +754,18 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
                     )}
                 </div>
 
-                <div className="mt-auto pb-8">
-                    {/* Footer removed as per user request */}
+                <div className="mt-auto pt-2 border-t border-slate-200 text-center">
+                    <div className="flex items-center justify-between text-[6px] font-black text-slate-400 uppercase tracking-widest">
+                        <div className="flex items-center gap-4">
+                            {pageIdx === pages.length - 1 && (
+                                <>
+                                    <span>End of Report</span>
+                                    <div className="w-1 h-1 bg-slate-200 rounded-full"></div>
+                                </>
+                            )}
+                            <span>Page {pageIdx + 1} of {pages.length}</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         ));
