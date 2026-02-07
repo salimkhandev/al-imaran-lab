@@ -1,4 +1,7 @@
 import React, { useState, useEffect } from "react";
+import { IoAdd, IoClose, IoList, IoSave } from "react-icons/io5";
+import { CgSpinner } from "react-icons/cg";
+import Swal from 'sweetalert2';
 
 export default function TestTemplateForm({ onTemplateCreated, initialTemplate }) {
     const [mainTestName, setMainTestName] = useState("");
@@ -190,9 +193,23 @@ export default function TestTemplateForm({ onTemplateCreated, initialTemplate })
             }]);
 
             if (onTemplateCreated) onTemplateCreated();
+            Swal.fire({
+                title: 'Template Saved',
+                text: 'The diagnostic module has been successfully registered.',
+                icon: 'success',
+                timer: 2000,
+                showConfirmButton: false,
+                position: 'top-end',
+                toast: true
+            });
         } catch (err) {
             console.error("Failed to save template:", err);
-            alert(`Failed to save: ${err.message}\n\nIf you recently updated the app, please close and restart it to apply database changes.`);
+            Swal.fire({
+                title: 'Deployment Failed',
+                text: `Failed to save: ${err.message}. If you recently updated the app, please restart it.`,
+                icon: 'error',
+                confirmButtonColor: '#0f172a'
+            });
         } finally {
             setIsSaving(false);
         }
@@ -348,9 +365,7 @@ export default function TestTemplateForm({ onTemplateCreated, initialTemplate })
                     {items.length === 0 && (
                         <div className="text-center py-20 border-2 border-dashed border-slate-100 rounded-3xl bg-slate-50/30">
                             <div className="w-16 h-16 bg-white rounded-full shadow-sm flex items-center justify-center mx-auto mb-4 border border-slate-50">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-slate-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                                </svg>
+                                <IoAdd className="h-8 w-8 text-slate-200" />
                             </div>
                             <p className="text-slate-400 font-medium">Add testing rows or sections below</p>
                         </div>
@@ -376,9 +391,7 @@ export default function TestTemplateForm({ onTemplateCreated, initialTemplate })
                                     onClick={() => removeItem(item.id)}
                                     className="absolute -right-2 top-6 p-2 bg-white text-slate-300 hover:text-red-500 rounded-full shadow-sm border border-slate-100 opacity-0 group-hover:opacity-100 transition-all z-20 hover:scale-110"
                                 >
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                                    </svg>
+                                    <IoClose className="h-4 w-4" />
                                 </button>
 
                                 {item.type === 'subheading' ? (
@@ -512,7 +525,7 @@ export default function TestTemplateForm({ onTemplateCreated, initialTemplate })
                                                                     }}
                                                                     className="opacity-0 group-hover/range:opacity-100 p-1 text-slate-400 hover:text-rose-500 transition-all"
                                                                 >
-                                                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                                                    <IoClose className="w-3 h-3" />
                                                                 </button>
                                                             </div>
                                                         ))}
@@ -592,15 +605,11 @@ export default function TestTemplateForm({ onTemplateCreated, initialTemplate })
 
                 <div className="grid grid-cols-2 gap-4 pt-6 border-t border-slate-100">
                     <button type="button" onClick={addTestRow} className="flex items-center justify-center gap-2 bg-white border border-slate-200 py-3 rounded-lg text-[10px] font-black text-slate-600 hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all active:scale-95 group">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" />
-                        </svg>
+                        <IoAdd className="h-4 w-4" />
                         <span className="uppercase tracking-widest">Add Test Row</span>
                     </button>
                     <button type="button" onClick={addSubheading} className="flex items-center justify-center gap-2 bg-white border border-slate-200 py-3 rounded-lg text-[10px] font-black text-slate-600 hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all active:scale-95 group">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 6h16M4 12h16m-7 6h7" />
-                        </svg>
+                        <IoList className="h-4 w-4" />
                         <span className="uppercase tracking-widest">Add Section</span>
                     </button>
                 </div>
@@ -618,17 +627,12 @@ export default function TestTemplateForm({ onTemplateCreated, initialTemplate })
                     <button type="submit" disabled={isSaving} className="flex-1 bg-slate-900 text-white py-3.5 rounded-xl font-black hover:bg-black transition-all shadow-xl shadow-slate-200 uppercase tracking-widest text-sm active:scale-[0.98] disabled:bg-slate-300 flex items-center justify-center gap-3">
                         {isSaving ? (
                             <>
-                                <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
+                                <CgSpinner className="animate-spin h-4 w-4 text-white" />
                                 <span>PROCESSING...</span>
                             </>
                         ) : (
                             <>
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-                                </svg>
+                                <IoSave className="h-5 w-5" />
                                 <span>{initialTemplate ? "COMMIT UPDATES" : "DEPLOY NEW TEMPLATE"}</span>
                             </>
                         )}

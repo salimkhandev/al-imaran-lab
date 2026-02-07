@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { IoArchive, IoPrint, IoCreate, IoTrash, IoBook } from 'react-icons/io5';
+import Swal from 'sweetalert2';
 
 export default function TestTemplateList({ refreshKey, onSelect, onEdit }) {
     const [templates, setTemplates] = useState([]);
@@ -22,12 +24,31 @@ export default function TestTemplateList({ refreshKey, onSelect, onEdit }) {
 
     const handleDelete = async (e, id) => {
         e.stopPropagation();
-        if (!confirm("Delete template?")) return;
+        const result = await Swal.fire({
+            title: 'Delete Template?',
+            text: "This will remove this test structure from the vault.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#e11d48',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Yes, Delete'
+        });
+
+        if (!result.isConfirmed) return;
+
         try {
             await window.electronAPI.deleteTestTemplate(id);
             loadTemplates();
+            Swal.fire({
+                title: 'Deleted!',
+                text: 'Template removed from vault.',
+                icon: 'success',
+                timer: 1500,
+                showConfirmButton: false
+            });
         } catch (err) {
             console.error(err);
+            Swal.fire('Error', 'Failed to delete template', 'error');
         }
     };
 
@@ -54,9 +75,7 @@ export default function TestTemplateList({ refreshKey, onSelect, onEdit }) {
             <div className="flex items-center justify-between mb-12 border-b border-slate-50 pb-6">
                 <div className="flex items-center gap-4">
                     <div className="p-2.5 bg-slate-900 text-white rounded-xl shadow-lg shadow-slate-200">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                        </svg>
+                        <IoArchive className="h-5 w-5" />
                     </div>
                     <div>
                         <h2 className="text-xl font-black text-slate-900 tracking-tight uppercase">Archive Vault</h2>
@@ -115,20 +134,22 @@ export default function TestTemplateList({ refreshKey, onSelect, onEdit }) {
                         >
                             {/* TOOLS FLOATER */}
                             <div className="absolute -top-4 right-8 flex gap-2 opacity-0 group-hover/card:opacity-100 transition-all translate-y-2 group-hover/card:translate-y-0 z-30">
-                                <button onClick={(e) => { e.stopPropagation(); alert('System Print Active: Connection Pending...'); }} className="bg-white p-3 rounded-lg text-slate-400 hover:text-black shadow-lg border border-slate-200 hover:scale-110 transition-all font-black" title="Print Report">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                                    </svg>
+                                <button onClick={(e) => {
+                                    e.stopPropagation();
+                                    Swal.fire({
+                                        title: 'System Dispatch',
+                                        text: 'System Print Active: Connection Pending...',
+                                        icon: 'info',
+                                        confirmButtonColor: '#0f172a'
+                                    });
+                                }} className="bg-white p-3 rounded-lg text-slate-400 hover:text-black shadow-lg border border-slate-200 hover:scale-110 transition-all font-black" title="Print Report">
+                                    <IoPrint className="h-5 w-5" />
                                 </button>
                                 <button onClick={(e) => { e.stopPropagation(); onEdit(template); }} className="bg-white p-3 rounded-lg text-slate-400 hover:text-black shadow-lg border border-slate-200 hover:scale-110 transition-all font-black" title="Modify Template">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                    </svg>
+                                    <IoCreate className="h-5 w-5" />
                                 </button>
                                 <button onClick={(e) => handleDelete(e, template.id)} className="bg-white p-3 rounded-lg text-slate-400 hover:text-black shadow-lg border border-slate-200 hover:scale-110 transition-all font-black" title="Archive / Delete">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                    </svg>
+                                    <IoTrash className="h-5 w-5" />
                                 </button>
                             </div>
 
@@ -251,9 +272,7 @@ export default function TestTemplateList({ refreshKey, onSelect, onEdit }) {
                 }) : (
                     <div className="text-center py-32 bg-slate-50/50 rounded-[3rem] border-2 border-dashed border-slate-100">
                         <div className="w-20 h-20 bg-white rounded-full shadow-xl flex items-center justify-center mx-auto mb-6">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-slate-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                            </svg>
+                            <IoBook className="h-10 w-10 text-slate-200" />
                         </div>
                         <p className="text-slate-400 font-bold uppercase tracking-[0.2em] text-sm">Vault Empty</p>
                         <p className="text-slate-300 text-xs mt-1">No templates have been archived yet.</p>

@@ -13,6 +13,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getReports: () => ipcRenderer.invoke('get-reports'),
     getReportById: (id) => ipcRenderer.invoke('get-report-by-id', id),
     saveReport: (report) => ipcRenderer.invoke('save-report', report),
+    updateReport: (report) => ipcRenderer.invoke('update-report', report),
     deleteReport: (id) => ipcRenderer.invoke('delete-report', id),
+    // Database Management
+    exportDb: () => ipcRenderer.invoke('export-db'),
+    importDb: () => ipcRenderer.invoke('import-db'),
+    // Printer Status
+    getPrinterStatus: () => ipcRenderer.invoke('get-printer-status'),
+    // Next ID
+    getNextPatientId: () => ipcRenderer.invoke('get-next-patient-id'),
+    // Delete All
+    deleteAllReports: () => ipcRenderer.invoke('delete-all-reports'),
+    // Printing
+    printWindow: () => ipcRenderer.invoke('print-window'),
 });
 

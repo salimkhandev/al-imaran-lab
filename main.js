@@ -1,9 +1,12 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, Menu } = require('electron');
 const path = require('path');
+const fs = require('fs');
 const db = require('./database');
 
 function createWindow() {
     const win = new BrowserWindow({
+        width: 1200,
+        height: 800,
         icon: path.join(__dirname, 'src/assets/app-logo.png'),
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),
@@ -14,26 +17,22 @@ function createWindow() {
 
     win.maximize();
 
-    // Load the app
     if (app.isPackaged) {
-        // In production, load the static index.html file from the dist folder
         win.loadFile(path.join(__dirname, 'dist/index.html'));
     } else {
-        // In development, load from the Vite dev server
         win.loadURL('http://localhost:3000').catch(() => {
             console.log('Dev server not available, loading from local file...');
             win.loadFile('index.html');
         });
-        // Open the DevTools automatically in development
         win.webContents.openDevTools();
     }
 }
 
-
 app.whenReady().then(() => {
+    Menu.setApplicationMenu(null);
     createWindow();
 
-    // IPC handlers for SQLite
+    // ... existing IPC handlers ...
     ipcMain.handle('get-users', () => {
         return db.prepare('SELECT * FROM users').all();
     });
@@ -62,10 +61,9 @@ app.whenReady().then(() => {
         return stmt.run(id);
     });
 
-    // IPC handlers for Reports
     ipcMain.handle('get-reports', () => {
         try {
-            return db.prepare('SELECT id, patient_name, patient_id, created_at FROM reports ORDER BY created_at DESC').all();
+            return db.prepare('SELECT id, patient_name, patient_id, report_data, created_at FROM reports ORDER BY created_at DESC').all();
         } catch (err) {
             console.error('Error fetching reports:', err);
             throw err;
@@ -74,10 +72,6 @@ app.whenReady().then(() => {
 
     ipcMain.handle('get-report-by-id', (event, id) => {
         try {
-            console.log('Fetching report by ID:', id);
-            if (id === undefined) {
-                console.error('ID is undefined!');
-            }
             return db.prepare('SELECT * FROM reports WHERE id = ?').get(id);
         } catch (err) {
             console.error('Error fetching report by ID:', err);
@@ -87,13 +81,22 @@ app.whenReady().then(() => {
 
     ipcMain.handle('save-report', (event, report) => {
         try {
-            console.log('Saving report:', report.patient_name);
             const stmt = db.prepare('INSERT INTO reports (patient_name, patient_id, report_data) VALUES (?, ?, ?)');
             const result = stmt.run(report.patient_name, report.patient_id, JSON.stringify(report.report_data));
-            console.log('Report saved successfully:', result);
-            return result;
+            return { success: true, id: result.lastInsertRowid };
         } catch (err) {
             console.error('Error saving report:', err);
+            throw err;
+        }
+    });
+
+    ipcMain.handle('update-report', (event, report) => {
+        try {
+            const stmt = db.prepare('UPDATE reports SET patient_name = ?, patient_id = ?, report_data = ? WHERE id = ?');
+            stmt.run(report.patient_name, report.patient_id, JSON.stringify(report.report_data), report.id);
+            return { success: true };
+        } catch (err) {
+            console.error('Error updating report:', err);
             throw err;
         }
     });
@@ -106,6 +109,128 @@ app.whenReady().then(() => {
             console.error('Error deleting report:', err);
             throw err;
         }
+    });
+
+    // DATABASE EXPORT/IMPORT
+    ipcMain.handle('export-db', async () => {
+        const { filePath } = await dialog.showSaveDialog({
+            title: 'Export Database',
+            defaultPath: path.join(app.getPath('documents'), 'lab-database-backup.json'),
+            filters: [{ name: 'JSON', extensions: ['json'] }]
+        });
+
+        if (filePath) {
+            try {
+                const templates = db.prepare('SELECT * FROM test_templates').all();
+                const reports = db.prepare('SELECT * FROM reports').all();
+                const data = JSON.stringify({ templates, reports }, null, 2);
+                fs.writeFileSync(filePath, data);
+                return { success: true, message: 'Database exported successfully!' };
+            } catch (err) {
+                console.error('Export failed:', err);
+                return { success: false, message: err.message };
+            }
+        }
+        return { success: false, message: 'Export cancelled' };
+    });
+
+    ipcMain.handle('import-db', async () => {
+        const { filePaths } = await dialog.showOpenDialog({
+            title: 'Import Database',
+            filters: [{ name: 'JSON', extensions: ['json'] }],
+            properties: ['openFile']
+        });
+
+        if (filePaths && filePaths[0]) {
+            try {
+                const rawData = fs.readFileSync(filePaths[0], 'utf8');
+                const { templates, reports } = JSON.parse(rawData);
+
+                // Start a transaction for safe merging
+                const insertTemplate = db.prepare('INSERT OR IGNORE INTO test_templates (name, items, created_at) VALUES (?, ?, ?)');
+                const insertReport = db.prepare('INSERT OR IGNORE INTO reports (patient_name, patient_id, report_data, created_at) VALUES (?, ?, ?, ?)');
+
+                const transaction = db.transaction(() => {
+                    if (templates) {
+                        for (const t of templates) {
+                            insertTemplate.run(t.name, t.items, t.created_at);
+                        }
+                    }
+                    if (reports) {
+                        for (const r of reports) {
+                            insertReport.run(r.patient_name, r.patient_id, r.report_data, r.created_at);
+                        }
+                    }
+                });
+
+                transaction();
+                return { success: true, message: 'Database imported and merged successfully!' };
+            } catch (err) {
+                console.error('Import failed:', err);
+                return { success: false, message: err.message };
+            }
+        }
+        return { success: false, message: 'Import cancelled' };
+    });
+
+    // PRINTER STATUS
+    ipcMain.handle('get-printer-status', async (event) => {
+        try {
+            const printers = await event.sender.getPrintersAsync();
+            const defaultPrinter = printers.find(p => p.isDefault) || printers[0];
+
+            if (!defaultPrinter) return { name: 'No Printer Found', status: 'Offline' };
+
+            // Electron's status: 0=good, otherwise usually busy or offline
+            // However, getPrinters() doesn't always reflect live 'Offline' real-time accurately without a print job,
+            // but we can use the 'status' or 'isDefault' and simply report what Electron sees.
+            return {
+                name: defaultPrinter.name,
+                status: defaultPrinter.status === 0 ? 'Online' : 'Offline'
+            };
+        } catch (err) {
+            console.error('Printer status error:', err);
+            return { name: 'Error', status: 'Offline' };
+        }
+    });
+
+    ipcMain.handle('get-next-patient-id', () => {
+        try {
+            const row = db.prepare('SELECT COUNT(*) as count FROM reports').get();
+            const nextNum = (row.count || 0) + 1;
+            const year = new Date().getFullYear();
+            return `AL-${year}-${String(nextNum).padStart(4, '0')}`;
+        } catch (err) {
+            console.error('Error getting next patient ID:', err);
+            return `AL-${new Date().getFullYear()}-0001`;
+        }
+    });
+
+    ipcMain.handle('delete-all-reports', () => {
+        try {
+            db.prepare('DELETE FROM reports').run();
+            // Also reset internal sqlite sequence for ID generation if needed, 
+            // but for patient ID we use COUNT+1 usually.
+            return { success: true, message: 'All patient records deleted successfully.' };
+        } catch (err) {
+            console.error('Delete all error:', err);
+            return { success: false, message: err.message };
+        }
+    });
+
+    ipcMain.handle('print-window', async (event) => {
+        const win = BrowserWindow.fromWebContents(event.sender);
+        if (win) {
+            try {
+                // Returns a promise that resolves when the print job is finished or cancelled
+                await win.webContents.print({ silent: false, printBackground: true, deviceName: '' });
+                return { success: true };
+            } catch (err) {
+                console.error('Printing failed or cancelled:', err);
+                return { success: false, error: err.message };
+            }
+        }
+        return { success: false, error: 'Window not found' };
     });
 
     app.on('activate', () => {

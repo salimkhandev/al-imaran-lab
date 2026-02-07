@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { IoClose } from 'react-icons/io5';
 import TestTemplateForm from './components/TestTemplateForm';
 import ReportWorkspace from './components/ReportWorkspace';
 import ReportHistory from './components/ReportHistory';
 
 function App() {
-    // UI Layout States
+    // ... existing states ...
     const [activeTemplate, setActiveTemplate] = useState(null);
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingTemplate, setEditingTemplate] = useState(null);
@@ -71,9 +72,7 @@ function App() {
                             onClick={() => setIsFormOpen(false)}
                             className="absolute top-6 right-6 p-3 bg-slate-100 text-slate-400 hover:text-white hover:bg-slate-900 rounded-xl transition-all z-50 shadow-sm"
                         >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12"></path>
-                            </svg>
+                            <IoClose className="w-5 h-5" />
                         </button>
 
                         <div className="p-8 transform scale-90 origin-top">
@@ -86,7 +85,7 @@ function App() {
                 </div>
             )}
 
-            {/* GLOBAL STYLES FOR ANIMATIONS */}
+            {/* GLOBAL STYLES FOR ANIMATIONS & SWEETALERT OVERRIDES */}
             <style>{`
                 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
                 @keyframes zoom-in-95 { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
@@ -95,6 +94,40 @@ function App() {
                 .fade-in { animation-name: fade-in; }
                 .zoom-in-95 { animation-name: zoom-in-95; }
                 .slide-in-from-bottom-10 { animation-name: slide-in-from-bottom-10; }
+
+                /* SweetAlert2 Small Styles */
+                .swal2-popup {
+                    padding: 1rem !important;
+                    width: 24rem !important;
+                    border-radius: 1.5rem !important;
+                    font-family: inherit !important;
+                }
+                .swal2-title {
+                    font-size: 1rem !important;
+                    font-weight: 900 !important;
+                    text-transform: uppercase !important;
+                    letter-spacing: 0.05em !important;
+                }
+                .swal2-html-container {
+                    font-size: 0.75rem !important;
+                    font-weight: 500 !important;
+                    margin: 0.5rem 0 0 !important;
+                }
+                .swal2-actions {
+                    margin-top: 1rem !important;
+                }
+                .swal2-confirm, .swal2-cancel {
+                    font-size: 0.7rem !important;
+                    font-weight: 900 !important;
+                    text-transform: uppercase !important;
+                    letter-spacing: 0.1em !important;
+                    padding: 0.6rem 1.5rem !important;
+                    border-radius: 0.75rem !important;
+                }
+                .swal2-icon {
+                    transform: scale(0.7) !important;
+                    margin-bottom: 0 !important;
+                }
             `}</style>
         </div>
     );
