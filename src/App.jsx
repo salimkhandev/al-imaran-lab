@@ -59,29 +59,21 @@ function App() {
             />
 
             {/* MODAL OVERLAY FOR TEMPLATE CREATION/EDITING */}
+            {/* FULLSCREEN LAYER FOR TEMPLATE DESIGNER */}
             {isFormOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-8 no-print">
-                    <div
-                        className="absolute inset-0 bg-slate-900/60 backdrop-blur-xl animate-in fade-in duration-300"
+                <div className="fixed inset-0 z-[200] no-print bg-slate-950 overflow-y-auto custom-scrollbar">
+                    <TestTemplateForm
+                        initialTemplate={editingTemplate}
+                        onTemplateCreated={handleTemplateSaved}
+                    />
+
+                    {/* CLOSE BUTTON OVERLAY - Styled for the dark designer */}
+                    <button
                         onClick={() => setIsFormOpen(false)}
-                    ></div>
-
-                    <div className="relative w-full max-w-7xl max-h-[95vh] overflow-y-auto bg-white rounded-[2rem] shadow-2xl animate-in zoom-in-95 slide-in-from-bottom-5 duration-500 custom-scrollbar">
-                        {/* MODAL CLOSE BUTTON */}
-                        <button
-                            onClick={() => setIsFormOpen(false)}
-                            className="absolute top-6 right-6 p-3 bg-slate-100 text-slate-400 hover:text-white hover:bg-slate-900 rounded-xl transition-all z-50 shadow-sm"
-                        >
-                            <IoClose className="w-5 h-5" />
-                        </button>
-
-                        <div className="p-8 transform scale-90 origin-top">
-                            <TestTemplateForm
-                                initialTemplate={editingTemplate}
-                                onTemplateCreated={handleTemplateSaved}
-                            />
-                        </div>
-                    </div>
+                        className="fixed top-8 right-10 p-4 bg-slate-800/80 backdrop-blur-md text-slate-400 hover:text-white hover:bg-rose-600 rounded-2xl transition-all z-[210] shadow-2xl border border-slate-700/50 group active:scale-95"
+                    >
+                        <IoClose className="w-6 h-6 group-hover:rotate-90 transition-transform duration-300" />
+                    </button>
                 </div>
             )}
 

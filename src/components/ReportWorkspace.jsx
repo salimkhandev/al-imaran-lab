@@ -3,6 +3,7 @@ import { IoClose, IoArrowBack, IoMenu, IoSearch, IoAdd, IoLibrary, IoLockClosed,
 import Swal from 'sweetalert2';
 import appLogo from '../assets/app-logo.png';
 import docLogo from '../assets/doc-logo.png';
+import GridTestSection from './GridTestSection';
 
 export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
     const [allTemplates, setAllTemplates] = useState([]);
@@ -38,8 +39,6 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
         name: "AL-IMRAN",
         brand: " LABORATORY",
         tagline: "Advanced Diagnostic & Research Center",
-        certification: "ISO 9001:2015",
-        footerTagline: "Precision Diagnostic"
     });
     const [printerStatus, setPrinterStatus] = useState({ name: 'Checking...', status: 'Offline' });
 
@@ -134,9 +133,82 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
             }
 
             const batchId = `batch-${Math.random().toString(36).substr(2, 9)}-${Date.now()}`;
+
+            // Initial config from meta
+            let currentConfig = {
+                showTest: meta.showTest !== false,
+                showUnit: meta.showUnit !== false,
+                showValue: meta.showValue !== false,
+                showResult: meta.showResult !== false,
+                testLabel: meta.testLabel || "Investigation",
+                unitLabel: meta.unitLabel || "Unit",
+                valueLabel: meta.valueLabel || "Reference Range",
+                resultLabel: meta.resultLabel || "Result"
+            };
+
+            // Capture initial fixed config for the main top header
+            const initialConfig = { ...currentConfig };
+
+            let currentGridHeader = null;
+
+            const processedRows = rows.map(r => {
+                if (r.type === 'subheading') {
+                    // Subheadings can override column visibility for subsequent tests
+                    currentConfig = {
+                        ...currentConfig,
+                        showTest: r.showTest !== false,
+                        showUnit: r.showUnit !== false,
+                        showValue: r.showValue !== false,
+                        showResult: r.showResult !== false,
+                        // Labels can also be overridden if present in subheading r
+                        testLabel: r.testLabel || currentConfig.testLabel,
+                        unitLabel: r.unitLabel || currentConfig.unitLabel,
+                        valueLabel: r.valueLabel || currentConfig.valueLabel,
+                        resultLabel: r.resultLabel || currentConfig.resultLabel
+                    };
+
+                    // Track grid header for subsequent test rows
+                    if (r.isGridHeader && r.gridLabels && r.gridLabels.length > 0) {
+                        currentGridHeader = {
+                            gridLabels: r.gridLabels,
+                            isGridHeader: true
+                        };
+                    } else {
+                        currentGridHeader = null;
+                    }
+                }
+
+                // Pass grid configuration to test rows
+                const rowData = { ...r, columnConfig: { ...currentConfig }, parentTemplateId: template.id, batchId };
+                if (currentGridHeader && r.type === 'test') {
+                    rowData.gridConfig = currentGridHeader;
+                    // Initialize gridResults if not present
+                    if (!rowData.gridResults) {
+                        rowData.gridResults = {};
+                    }
+                }
+
+                if (r.type === 'matrix') {
+                    rowData.matrixRows = (r.matrixRows || []).map(row => ({
+                        ...row,
+                        values: row.values && row.values.length === r.headers.length
+                            ? [...row.values]
+                            : r.headers.map(() => "")
+                    }));
+                }
+
+                return rowData;
+            });
+
             const newLines = [
-                { type: 'header_main', text: template.name, subtitle: meta.subtitle, batchId },
-                ...rows.map(r => ({ ...r, parentTemplateId: template.id, batchId }))
+                {
+                    type: 'header_main',
+                    text: template.name,
+                    subtitle: meta.subtitle,
+                    batchId,
+                    columnConfig: initialConfig // Use the captured initialConfig to prevent subheading leakage
+                },
+                ...processedRows
             ];
 
             setActiveReportLines(prev => [...prev, ...newLines]);
@@ -214,24 +286,45 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
         setActiveReportLines(updated);
     };
 
-    const checkAbnormal = (line) => {
-        if (!line.result || isNaN(line.result)) return { isAbnormal: false, flag: "" };
-        const val = parseFloat(line.result);
-        const gender = (patientInfo.gender || "").toLowerCase();
+    const handleMatrixValueChange = (index, rowIndex, colIndex, value) => {
+        setActiveReportLines(prev => {
+            const updated = [...prev];
+            if (!updated[index]) return prev;
 
-        if (line.isGenderSpecific) {
-            const isMale = gender.includes('m');
-            const low = parseFloat(isMale ? line.maleLow : line.femaleLow);
-            const high = parseFloat(isMale ? line.maleHigh : line.femaleHigh);
-            if (!isNaN(low) && val < low) return { isAbnormal: true, flag: "↓" };
-            if (!isNaN(high) && val > high) return { isAbnormal: true, flag: "↑" };
-        } else if (!line.isSingleValue && !line.isMultiRange) {
-            const low = parseFloat(line.normalLow);
-            const high = parseFloat(line.normalHigh);
-            if (!isNaN(low) && val < low) return { isAbnormal: true, flag: "↓" };
-            if (!isNaN(high) && val > high) return { isAbnormal: true, flag: "↑" };
-        }
-        return { isAbnormal: false, flag: "" };
+            const line = { ...updated[index] };
+            if (!line.matrixRows) return prev;
+
+            line.matrixRows = line.matrixRows.map((row, rIdx) => {
+                if (rIdx === rowIndex) {
+                    const rowValues = [...(row.values || [])];
+                    if (rowValues.length <= colIndex) {
+                        // Ensure the array is long enough if it somehow isn't
+                        while (rowValues.length <= colIndex) rowValues.push("");
+                    }
+                    rowValues[colIndex] = value;
+                    return { ...row, values: rowValues };
+                }
+                return row;
+            });
+
+            updated[index] = line;
+            return updated;
+        });
+    };
+
+
+    const getReportGridStyle = (config) => {
+        if (!config) return { display: 'grid', gridTemplateColumns: '3.5fr 0.7fr 2.3fr 1.5fr', gap: '1rem' };
+        const parts = [];
+        if (config.showTest) parts.push("3.5fr");
+        if (config.showUnit) parts.push("0.7fr");
+        if (config.showValue) parts.push("2.3fr");
+        if (config.showResult) parts.push("1.5fr");
+        return {
+            display: 'grid',
+            gridTemplateColumns: parts.join(" "),
+            gap: '1rem'
+        };
     };
 
     const handleSaveReport = async (isSilent = false) => {
@@ -468,11 +561,10 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
     const renderPages = () => {
         const pages = [];
         let currentHeight = 0;
-        const HEIGHT_LIMIT = 780; // Calibrated for 20mm margins + clinical letterhead
-        const SIGNATURE_HEIGHT = 0; // Signatures removed as per user request
+        const HEIGHT_LIMIT = 900; // Increased to better utilize A4 space below letterhead
+        const SIGNATURE_HEIGHT = 0;
 
         if (activeReportLines.length === 0) {
-            // Return a single empty page if no tests added
             pages.push([]);
         } else {
             // Group lines by batchId to keep tests together
@@ -489,51 +581,113 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
             groups.forEach((group, groupIdx) => {
                 // Calculate total height of the group
                 let groupHeight = 0;
+                let mainHeader = null;
                 group.lines.forEach(line => {
                     let itemHeight = 45;
-                    if (line.type === 'header_main') itemHeight = 130;
+                    if (line.type === 'header_main') {
+                        itemHeight = 130;
+                        mainHeader = line;
+                    }
                     if (line.type === 'subheading') itemHeight = 65;
                     if (line.isGenderSpecific) itemHeight = 80;
+                    if (line.type === 'matrix') {
+                        itemHeight = 60 + ((line.matrixRows || []).length * 40);
+                    }
                     groupHeight += itemHeight;
                 });
 
                 const isLastGroup = groupIdx === groups.length - 1;
                 const effectiveLimit = isLastGroup ? (HEIGHT_LIMIT - SIGNATURE_HEIGHT) : HEIGHT_LIMIT;
 
-                // DECISION: Does the entire group fit on the current page?
-                const currentPageExists = pages.length > 0;
-                const targetPageIdx = currentPageExists ? pages.length - 1 : 0;
-                if (!currentPageExists) pages.push([]);
-
                 if (currentHeight + groupHeight > effectiveLimit) {
-                    // If it's not the first group on the page and it doesn't fit
+                    // It doesn't fit on this page
                     if (currentHeight > 0) {
-                        pages.push([...group.lines]);
-                        currentHeight = groupHeight;
-                    } else {
-                        // It's the first group and still doesn't fit (oversized)
-                        // We must split it
-                        group.lines.forEach((line) => {
-                            let itemHeight = 45;
-                            if (line.type === 'header_main') itemHeight = 130;
-                            if (line.type === 'subheading') itemHeight = 65;
-                            if (line.isGenderSpecific) itemHeight = 80;
-
-                            if (currentHeight + itemHeight > HEIGHT_LIMIT) {
-                                pages.push([line]);
-                                currentHeight = itemHeight;
+                        // There's already content. Check if it fits on a clean page.
+                        if (groupHeight <= HEIGHT_LIMIT) {
+                            // Fits on a new page entirely - move it all
+                            pages.push([...group.lines]);
+                            currentHeight = groupHeight;
+                        } else {
+                            // Too big even for a fresh page - we must start it here and split
+                            // or better, if there's enough space, start it here, otherwise fresh page
+                            if (currentHeight < HEIGHT_LIMIT * 0.3) {
+                                // Already at top-ish, start and split
+                                fillAndSplit(group, pages, currentHeight, HEIGHT_LIMIT, mainHeader);
+                                currentHeight = calculateRemainingHeight(pages[pages.length - 1], HEIGHT_LIMIT);
                             } else {
-                                pages[pages.length - 1].push(line);
-                                currentHeight += itemHeight;
+                                // Too late on page, move to fresh page then split
+                                pages.push([]);
+                                fillAndSplit(group, pages, 0, HEIGHT_LIMIT, mainHeader);
+                                currentHeight = calculateRemainingHeight(pages[pages.length - 1], HEIGHT_LIMIT);
                             }
-                        });
+                        }
+                    } else {
+                        // First group on page and it's too big, must split
+                        fillAndSplit(group, pages, 0, HEIGHT_LIMIT, mainHeader);
+                        currentHeight = calculateRemainingHeight(pages[pages.length - 1], HEIGHT_LIMIT);
                     }
                 } else {
-                    // Fits on current page
+                    // Fits perfectly
+                    if (pages.length === 0) pages.push([]);
                     pages[pages.length - 1].push(...group.lines);
                     currentHeight += groupHeight;
                 }
             });
+        }
+
+        // Helper to fill current page and split remainder
+        function fillAndSplit(group, pages, currentH, limit, mainH) {
+            let h = currentH;
+            if (pages.length === 0) pages.push([]);
+
+            group.lines.forEach((line, lIdx) => {
+                let itemH = 45;
+                if (line.type === 'header_main') itemH = 130;
+                if (line.type === 'subheading') itemH = 65;
+                if (line.isGenderSpecific) itemH = 80;
+                if (line.type === 'matrix') {
+                    itemH = 60 + ((line.matrixRows || []).length * 40);
+                }
+
+                if (h + itemH > limit) {
+                    // Move to new page
+                    const nextBatchLine = { ...line };
+                    // If we split a test, it's professional to repeat the header on next page
+                    const newPage = [];
+                    if (mainH && line.type !== 'header_main') {
+                        // Only repeat the main text, remove subtitle for (Contd.) pages
+                        newPage.push({
+                            ...mainH,
+                            text: `${mainH.text} (Contd.)`,
+                            subtitle: "", // Remove sub-main heading on repeated pages
+                            isRepeated: true
+                        });
+                        h = 130 + itemH;
+                    } else {
+                        h = itemH;
+                    }
+                    newPage.push(nextBatchLine);
+                    pages.push(newPage);
+                } else {
+                    pages[pages.length - 1].push(line);
+                    h += itemH;
+                }
+            });
+        }
+
+        // Helper to find ending height of a page
+        function calculateRemainingHeight(lines, limit) {
+            let h = 0;
+            if (!lines) return 0;
+            lines.forEach(line => {
+                let ih = 45;
+                if (line.type === 'header_main') ih = 130;
+                if (line.type === 'subheading') ih = 65;
+                if (line.isGenderSpecific) ih = 80;
+                if (line.type === 'matrix') ih = 60 + ((line.matrixRows || []).length * 40);
+                h += ih;
+            });
+            return h;
         }
 
         return pages.map((pageLines, pageIdx) => (
@@ -548,15 +702,11 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
                                     {labInfo.name || "AL-IMRAN"}&nbsp; <span className="text-slate-800">{labInfo.brand || "LABORATORY"}</span>
                                 </h1>
                                 <p className="text-[8px] font-black uppercase tracking-[0.2em] text-slate-500 mt-1">{labInfo.tagline || "Advanced Diagnostic & Research Center"}</p>
-                                <div className="flex gap-2 mt-2">
-                                    <span className="text-[7px] font-black bg-slate-100 px-1 py-0.5 rounded uppercase">{labInfo.certification || "ISO 9001:2015"}</span>
-                                    <span className="text-[7px] font-black bg-slate-100 px-1 py-0.5 rounded uppercase">NABL ACCREDITED</span>
-                                </div>
                             </div>
                         </div>
                         <div className="text-right text-[8px] font-bold text-slate-600 space-y-0.5 pb-1">
-                            <p>HOUSE #24, ROAD #03, DHANMONDI</p>
-                            <p>DHAKA-1205, BANGLADESH</p>
+                            <p>Luqman Banda</p>
+                            <p>AL</p>
                             <p>PHONE: +880 1234 567890</p>
                         </div>
                     </div>
@@ -584,7 +734,6 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
                                     >
                                         <option value="Male">Male</option>
                                         <option value="Female">Female</option>
-                                        <option value="Transgender">Transgender</option>
                                     </select>
                                 )}
                             </div>
@@ -616,6 +765,7 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
                         pageLines.map((line) => {
                             const idx = line.originalIndex;
                             if (line.type === 'header_main') {
+                                const config = line.columnConfig || {};
                                 return (
                                     <div key={idx} id={line.batchId} className="mt-8 mb-6 text-center relative group/header">
                                         <input
@@ -643,98 +793,250 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
                                             </button>
                                         )}
 
-                                        {/* DYNAMIC COLUMN HEADERS - Positioned after the Test Name Title */}
-                                        <div className="report-table-header grid grid-cols-[3.5fr_0.7fr_2.3fr_1.5fr] items-center gap-4 mt-6">
-                                            <span className="text-left">Investigation</span>
-                                            <span className="text-center">Unit</span>
-                                            <span className="text-center">Reference Range</span>
-                                            <span className="text-right whitespace-nowrap">Result</span>
+                                        {/* DYNAMIC COLUMN HEADERS - Only show on first instance, not on repeated (Contd.) headers */}
+                                        {!line.isRepeated && (
+                                            <div style={getReportGridStyle(config)} className="report-table-header items-center mt-6">
+                                                {config.showTest && <span className="text-left">{config.testLabel || "Investigation"}</span>}
+                                                {config.showUnit && <span className="text-center">{config.unitLabel || "Unit"}</span>}
+                                                {config.showValue && <span className="text-center">{config.valueLabel || "Reference Range"}</span>}
+                                                {config.showResult && <span className="text-right whitespace-nowrap">{config.resultLabel || "Result"}</span>}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            }
+                            // Handle grid sections with GridTestSection component
+                            if (line.type === 'subheading' && line.isGridHeader && line.gridLabels && line.gridLabels.length > 0) {
+                                // Find all test rows that belong to this grid section
+                                const gridTests = [];
+                                let nextIdx = idx + 1;
+                                while (nextIdx < activeReportLines.length &&
+                                    activeReportLines[nextIdx].type === 'test' &&
+                                    activeReportLines[nextIdx].gridConfig?.isGridHeader) {
+                                    gridTests.push({
+                                        ...activeReportLines[nextIdx],
+                                        originalIndex: nextIdx
+                                    });
+                                    nextIdx++;
+                                }
+
+                                // Render using GridTestSection component
+                                return (
+                                    <GridTestSection
+                                        key={idx}
+                                        section={line}
+                                        tests={gridTests}
+                                        isHistoryMode={isHistoryMode}
+                                        onResultChange={(testIdx, gridIdx, value) => {
+                                            const actualIndex = gridTests[testIdx].originalIndex;
+                                            const newGridResults = { ...(activeReportLines[actualIndex].gridResults || {}) };
+                                            newGridResults[gridIdx] = value;
+                                            handleLineChange(actualIndex, 'gridResults', newGridResults);
+                                        }}
+                                    />
+                                );
+                            }
+
+                            if (line.type === 'matrix') {
+                                return (
+                                    <div key={idx} className="mt-8 mb-8 page-break-inside-avoid px-2">
+                                        {line.title && (
+                                            <div className="text-[12px] font-black uppercase tracking-[0.2em] text-slate-900 border-b-2 border-slate-900 pb-1.5 mb-6 text-center italic">
+                                                {line.title}
+                                            </div>
+                                        )}
+                                        <div className="w-full">
+                                            {/* Dynamic Matrix Header */}
+                                            <div className="flex border-b-2 border-slate-900 pb-2 mb-2">
+                                                <div className="w-1/3 font-black text-[10px] uppercase text-slate-500 tracking-widest pl-2">{line.rowLabel || "Test"}</div>
+                                                <div className="flex-1 flex justify-around">
+                                                    {(line.headers || []).map((h, hi) => (
+                                                        <div key={hi} className="text-center font-black text-[10px] uppercase text-slate-900 w-full px-1">
+                                                            {h}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            {/* Matrix Rows */}
+                                            {(line.matrixRows || []).map((row, ri) => (
+                                                <div key={ri} className="flex border-b border-slate-100 py-3 items-center hover:bg-slate-50 transition-colors group">
+                                                    <div className="w-1/3 font-bold text-[10px] text-slate-800 uppercase tracking-tight pl-2">
+                                                        {row.name}
+                                                    </div>
+                                                    <div className="flex-1 flex justify-around">
+                                                        {(row.values || []).map((val, ci) => (
+                                                            <div key={ci} className="w-full px-2">
+                                                                {line.isPredefined ? (
+                                                                    <select
+                                                                        value={val || ""}
+                                                                        onChange={(e) => handleMatrixValueChange(idx, ri, ci, e.target.value)}
+                                                                        className="w-full text-center border-b border-slate-200 font-bold bg-transparent transition-all text-[11px] outline-none hover:border-slate-900 appearance-none cursor-pointer focus:border-blue-500 text-slate-900"
+                                                                    >
+                                                                        <option value="">---</option>
+                                                                        {(line.resultOptions || [])
+                                                                            .filter(opt => {
+                                                                                if (!opt) return false;
+                                                                                const t = opt.trim();
+                                                                                // Filter out strings that are just dashes or empty
+                                                                                return t !== "" && t !== "---" && t !== "(---)";
+                                                                            })
+                                                                            .map((opt, oi) => (
+                                                                                <option key={oi} value={opt}>{opt}</option>
+                                                                            ))}
+                                                                    </select>
+                                                                ) : (
+                                                                    <input
+                                                                        type="text"
+                                                                        value={val || ""}
+                                                                        onChange={(e) => handleMatrixValueChange(idx, ri, ci, e.target.value)}
+                                                                        className="w-full text-center border-b border-slate-200 font-bold bg-transparent transition-all text-[11px] outline-none hover:border-slate-900 focus:border-blue-500 text-slate-900"
+                                                                        placeholder="---"
+                                                                    />
+                                                                )}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            ))}
                                         </div>
                                     </div>
                                 );
                             }
+
+                            // Handle standard subheadings (non-grid)
                             if (line.type === 'subheading') {
+                                const hasTitle = line.text && line.text.trim() !== "";
+                                const hasSubtext = line.subtext && line.subtext.trim() !== "";
+
+                                if (!hasTitle && !hasSubtext) return null;
+
                                 return (
-                                    <div key={idx} className="mt-8 mb-4 border-l-4 border-slate-900 pl-4 py-1">
-                                        <input
-                                            type="text"
-                                            value={line.text}
-                                            readOnly={true}
-                                            className="text-sm font-black uppercase tracking-wider text-slate-900 w-full bg-transparent outline-none cursor-default"
-                                        />
+                                    <div key={idx} className="mt-8 mb-4">
+                                        {hasTitle && (
+                                            <div className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-900 border-y-2 border-slate-900 py-1.5 w-full text-center">
+                                                {line.text}
+                                            </div>
+                                        )}
+                                        {hasSubtext && (
+                                            <div className={`${hasTitle ? 'text-[9px] font-bold text-slate-600 mt-2 uppercase tracking-[0.3em]' : 'text-[10px] font-black uppercase tracking-[0.15em] text-slate-900'} w-full text-center`}>
+                                                {line.subtext}
+                                            </div>
+                                        )}
+
+                                        {/* GRID HEADER MODE - Show custom column labels */}
+                                        {line.isGridHeader && line.gridLabels && line.gridLabels.length > 0 && (
+                                            <div className="mt-4 flex items-center gap-2">
+                                                <div className="flex-1"></div>
+                                                {line.gridLabels.map((label, gIdx) => (
+                                                    <div key={gIdx} className="w-20 text-center">
+                                                        <div className="text-[9px] font-black uppercase text-slate-900 border-b-2 border-slate-900 pb-1">
+                                                            {label}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                 );
                             }
+                            // Skip grid-mode test rows - they're rendered by GridTestSection component
+                            if (line.type === 'test' && line.gridConfig && line.gridConfig.isGridHeader && line.gridConfig.gridLabels) {
+                                return null;
+                            }
+
+                            // Standard test row rendering
                             return (
-                                <div key={idx} className="report-row grid grid-cols-[3.5fr_0.7fr_2.3fr_1.5fr] items-start gap-4">
-                                    <div className="font-black text-slate-900 uppercase text-[10px] leading-tight break-words py-1">
-                                        {line.name}
-                                    </div>
-                                    <input
-                                        type="text"
-                                        value={line.unit}
-                                        readOnly={true}
-                                        className="text-center italic font-serif text-[9px] text-slate-900 bg-transparent outline-none w-full cursor-default"
-                                    />
-                                    <div className="text-center text-[9px] font-bold text-slate-800 flex items-center justify-center gap-1 w-full">
-                                        {line.isMultiRange ? (
-                                            <div className="flex flex-col items-center w-full space-y-0.5">
-                                                {(line.multiRanges || [""]).map((range, rIdx) => (
-                                                    <input
-                                                        key={rIdx}
-                                                        type="text"
-                                                        value={range}
-                                                        readOnly={true}
-                                                        className="w-full text-center bg-transparent outline-none font-bold text-[8px] border-b border-transparent cursor-default"
-                                                    />
-                                                ))}
-                                            </div>
-                                        ) : line.isGenderSpecific ? (
-                                            <div className="flex items-center gap-1 bg-slate-50 px-2 py-0.5 rounded border border-slate-100">
-                                                <input type="text" value={line.maleLow} readOnly={true} className="w-4 bg-transparent outline-none text-center cursor-default" />
-                                                <span>-</span>
-                                                <input type="text" value={line.maleHigh} readOnly={true} className="w-4 bg-transparent outline-none text-center cursor-default" />
-                                                <span className="text-[6px] opacity-60">(M)</span>
-                                                <span className="mx-1 opacity-20">|</span>
-                                                <input type="text" value={line.femaleLow} readOnly={true} className="w-4 bg-transparent outline-none text-center cursor-default" />
-                                                <span>-</span>
-                                                <input type="text" value={line.femaleHigh} readOnly={true} className="w-4 bg-transparent outline-none text-center cursor-default" />
-                                                <span className="text-[6px] opacity-60">(F)</span>
-                                            </div>
-                                        ) : (
-                                            line.isSingleValue ? (
-                                                <input
-                                                    type="text"
-                                                    value={line.normalLow}
-                                                    readOnly={true}
-                                                    className="text-center bg-transparent outline-none w-full font-bold cursor-default"
-                                                />
-                                            ) : (
-                                                <div className="flex items-center gap-1">
-                                                    <input type="text" value={line.normalLow} readOnly={true} className="w-8 bg-transparent outline-none text-right cursor-default" />
-                                                    <span>-</span>
-                                                    <input type="text" value={line.normalHigh} readOnly={true} className="w-8 bg-transparent outline-none text-left cursor-default" />
-                                                </div>
-                                            )
-                                        )}
-                                    </div>
-                                    <div className="flex items-center justify-end gap-2 w-full h-7">
-                                        <textarea
-                                            value={line.result || ""}
-                                            readOnly={isHistoryMode}
-                                            rows={1}
-                                            onChange={(e) => handleLineChange(idx, 'result', e.target.value)}
-                                            className={`w-full text-right border-b outline-none font-black bg-transparent transition-all resize-none overflow-hidden py-0.5 ${isHistoryMode ? 'border-transparent' : 'border-slate-100 hover:border-slate-300'} ${checkAbnormal(line).isAbnormal ? 'text-rose-600 print:text-black' : 'text-black'} ${(line.result || "").length > 25 ? 'text-[7px] leading-[1.1]' :
-                                                (line.result || "").length > 15 ? 'text-[9px] leading-tight' :
-                                                    'text-[11px]'
-                                                }`}
-                                            placeholder="0.00"
-                                            style={{ height: '28px' }}
+                                <div key={idx} style={getReportGridStyle(line.columnConfig)} className="report-row items-start">
+                                    {line.columnConfig?.showTest && (
+                                        <div className="font-black text-slate-900 uppercase text-[10px] leading-tight break-words py-1">
+                                            {line.name}
+                                        </div>
+                                    )}
+                                    {line.columnConfig?.showUnit && (
+                                        <input
+                                            type="text"
+                                            value={line.unit}
+                                            readOnly={true}
+                                            className="text-center italic font-serif text-[9px] text-slate-900 bg-transparent outline-none w-full cursor-default"
                                         />
-                                        {checkAbnormal(line).isAbnormal && (
-                                            <span className="text-[10px] font-black text-rose-600 animate-pulse print:animate-none print:text-black whitespace-nowrap">{checkAbnormal(line).flag}</span>
-                                        )}
-                                    </div>
+                                    )}
+                                    {line.columnConfig?.showValue && (
+                                        <div className="text-center text-[9px] font-bold text-slate-800 flex items-center justify-center gap-1 w-full">
+                                            {line.isMultiRange ? (
+                                                <div className="flex flex-col items-center w-full space-y-0.5">
+                                                    {(line.multiRanges || [""]).map((range, rIdx) => (
+                                                        <input
+                                                            key={rIdx}
+                                                            type="text"
+                                                            value={range}
+                                                            readOnly={true}
+                                                            className="w-full text-center bg-transparent outline-none font-bold text-[8px] border-b border-transparent cursor-default"
+                                                        />
+                                                    ))}
+                                                </div>
+                                            ) : line.isGenderSpecific ? (
+                                                (line.maleLow || line.maleHigh || line.femaleLow || line.femaleHigh) ? (
+                                                    <div className="flex items-center gap-1 bg-slate-50 px-2 py-0.5 rounded border border-slate-100">
+                                                        <input type="text" value={line.maleLow} readOnly={true} className="w-4 bg-transparent outline-none text-center cursor-default" />
+                                                        <span>-</span>
+                                                        <input type="text" value={line.maleHigh} readOnly={true} className="w-4 bg-transparent outline-none text-center cursor-default" />
+                                                        <span className="text-[6px] opacity-60">(M)</span>
+                                                        <span className="mx-1 opacity-20">|</span>
+                                                        <input type="text" value={line.femaleLow} readOnly={true} className="w-4 bg-transparent outline-none text-center cursor-default" />
+                                                        <span>-</span>
+                                                        <input type="text" value={line.femaleHigh} readOnly={true} className="w-4 bg-transparent outline-none text-center cursor-default" />
+                                                        <span className="text-[6px] opacity-60">(F)</span>
+                                                    </div>
+                                                ) : null
+                                            ) : (
+                                                line.isSingleValue ? (
+                                                    <input
+                                                        type="text"
+                                                        value={line.normalLow}
+                                                        readOnly={true}
+                                                        className="text-center bg-transparent outline-none w-full font-bold cursor-default"
+                                                    />
+                                                ) : (
+                                                    (line.normalLow || line.normalHigh) ? (
+                                                        <div className="flex items-center gap-1">
+                                                            <input type="text" value={line.normalLow} readOnly={true} className="w-8 bg-transparent outline-none text-right cursor-default" />
+                                                            <span>-</span>
+                                                            <input type="text" value={line.normalHigh} readOnly={true} className="w-8 bg-transparent outline-none text-left cursor-default" />
+                                                        </div>
+                                                    ) : null
+                                                )
+                                            )}
+                                        </div>
+                                    )}
+                                    {line.columnConfig?.showResult && (
+                                        <div className="flex items-center justify-end gap-2 w-full h-7">
+                                            {line.isPredefined ? (
+                                                <select
+                                                    value={line.result || ""}
+                                                    onChange={(e) => handleLineChange(idx, 'result', e.target.value)}
+                                                    className="w-full text-right border-b border-slate-100 font-black bg-transparent transition-all text-[11px] outline-none hover:border-slate-300 appearance-none cursor-pointer"
+                                                >
+                                                    {(line.resultOptions || []).map((opt, oIdx) => (
+                                                        <option key={oIdx} value={opt}>{opt}</option>
+                                                    ))}
+                                                </select>
+                                            ) : (
+                                                <textarea
+                                                    value={line.result || ""}
+                                                    readOnly={isHistoryMode}
+                                                    rows={1}
+                                                    onChange={(e) => handleLineChange(idx, 'result', e.target.value)}
+                                                    className={`w-full text-right border-b outline-none font-black bg-transparent transition-all resize-none overflow-hidden py-0.5 ${isHistoryMode ? 'border-transparent' : 'border-slate-100 hover:border-slate-300'} text-black ${(line.result || "").length > 25 ? 'text-[7px] leading-[1.1]' :
+                                                        (line.result || "").length > 15 ? 'text-[9px] leading-tight' :
+                                                            'text-[11px]'
+                                                        }`}
+                                                    placeholder="0.00"
+                                                    style={{ height: '28px' }}
+                                                />
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             );
                         })
