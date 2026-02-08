@@ -520,10 +520,66 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
         if (window.electronAPI && window.electronAPI.deleteAllReports) {
             const result = await window.electronAPI.deleteAllReports();
             if (result.success) {
-                Swal.fire('Deleted!', result.message, 'success');
-                updatePatientId(); // Reset ID sequence
+                Swal.fire({
+                    title: 'Wiped!',
+                    text: result.message,
+                    icon: 'success',
+                    confirmButtonColor: '#0f172a'
+                });
+                handleReset(true);
             } else {
-                Swal.fire('Failed!', result.message, 'error');
+                Swal.fire({
+                    title: 'Error',
+                    text: result.message,
+                    icon: 'error',
+                    confirmButtonColor: '#0f172a'
+                });
+            }
+        }
+    };
+
+    const handleDeleteAllTemplates = async () => {
+        const result1 = await Swal.fire({
+            title: 'Wipe All Templates?',
+            text: "This will PERMANENTLY delete ALL test templates from your inventory. This cannot be undone.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#e11d48',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Yes, Delete All Templates'
+        });
+
+        if (!result1.isConfirmed) return;
+
+        const result2 = await Swal.fire({
+            title: 'Final Confirmation',
+            text: "Are you absolutely sure you want to destroy all templates?",
+            icon: 'error',
+            showCancelButton: true,
+            confirmButtonColor: '#e11d48',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Confirm Destruction'
+        });
+
+        if (!result2.isConfirmed) return;
+
+        if (window.electronAPI && window.electronAPI.deleteAllTestTemplates) {
+            const result = await window.electronAPI.deleteAllTestTemplates();
+            if (result.success) {
+                Swal.fire({
+                    title: 'Wiped!',
+                    text: result.message,
+                    icon: 'success',
+                    confirmButtonColor: '#0f172a'
+                });
+                loadTemplates(); // Refresh lists
+            } else {
+                Swal.fire({
+                    title: 'Error',
+                    text: result.message,
+                    icon: 'error',
+                    confirmButtonColor: '#0f172a'
+                });
             }
         }
     };
@@ -1160,6 +1216,13 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
                                             >
                                                 <div className="w-2 h-2 rounded-full bg-rose-400"></div>
                                                 Delete All Records
+                                            </button>
+                                            <button
+                                                onClick={() => { handleDeleteAllTemplates(); setIsMenuOpen(false); }}
+                                                className="w-full text-left px-4 py-3 text-[11px] font-black text-rose-600 hover:bg-rose-600 hover:text-white transition-all flex items-center gap-3"
+                                            >
+                                                <div className="w-2 h-2 rounded-full bg-red-600"></div>
+                                                Wipe All Templates
                                             </button>
                                         </div>
                                     )}

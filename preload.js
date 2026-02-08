@@ -24,6 +24,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getNextPatientId: () => ipcRenderer.invoke('get-next-patient-id'),
     // Delete All
     deleteAllReports: () => ipcRenderer.invoke('delete-all-reports'),
+    deleteAllTestTemplates: () => ipcRenderer.invoke('delete-all-test-templates'),
     // Printing
     printWindow: () => ipcRenderer.invoke('print-window'),
 });

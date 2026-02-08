@@ -218,6 +218,16 @@ app.whenReady().then(() => {
         }
     });
 
+    ipcMain.handle('delete-all-test-templates', () => {
+        try {
+            db.prepare('DELETE FROM test_templates').run();
+            return { success: true, message: 'All test templates deleted successfully.' };
+        } catch (err) {
+            console.error('Delete all templates error:', err);
+            return { success: false, message: err.message };
+        }
+    });
+
     ipcMain.handle('print-window', async (event) => {
         const win = BrowserWindow.fromWebContents(event.sender);
         if (win) {
