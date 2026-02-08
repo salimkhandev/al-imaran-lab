@@ -620,17 +620,47 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
         const HEIGHT_LIMIT = 900; // Increased to better utilize A4 space below letterhead
         const SIGNATURE_HEIGHT = 0;
 
+        const getItemHeight = (line) => {
+            let itemH = 45;
+            if (line.type === 'header_main') itemH = 130;
+            if (line.type === 'subheading') itemH = 65;
+            if (line.isGenderSpecific) itemH = 80;
+            if (line.type === 'matrix') {
+                itemH = 60 + ((line.matrixRows || []).length * 40);
+            }
+            return itemH;
+        };
+
         if (activeReportLines.length === 0) {
             pages.push([]);
         } else {
-            // Group lines by batchId to keep tests together
+            // Group lines by batchId AND subheading boundaries to keep sub-sections together
             const groups = [];
             activeReportLines.forEach((line, idx) => {
                 const indexedLine = { ...line, originalIndex: idx };
-                if (groups.length > 0 && groups[groups.length - 1].batchId === line.batchId) {
-                    groups[groups.length - 1].lines.push(indexedLine);
+
+                let startNewGroup = false;
+                if (groups.length === 0) {
+                    startNewGroup = true;
                 } else {
+                    const lastGroup = groups[groups.length - 1];
+                    const lastLineInGroup = lastGroup.lines[lastGroup.lines.length - 1];
+
+                    if (lastGroup.batchId !== line.batchId) {
+                        startNewGroup = true;
+                    } else if (line.type === 'subheading') {
+                        // Subheadings start a new group to keep them with their subsequent rows
+                        // EXCEPT if the previous item was the main header (keep them together)
+                        if (lastLineInGroup.type !== 'header_main') {
+                            startNewGroup = true;
+                        }
+                    }
+                }
+
+                if (startNewGroup) {
                     groups.push({ batchId: line.batchId, lines: [indexedLine] });
+                } else {
+                    groups[groups.length - 1].lines.push(indexedLine);
                 }
             });
 
@@ -639,17 +669,8 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
                 let groupHeight = 0;
                 let mainHeader = null;
                 group.lines.forEach(line => {
-                    let itemHeight = 45;
-                    if (line.type === 'header_main') {
-                        itemHeight = 130;
-                        mainHeader = line;
-                    }
-                    if (line.type === 'subheading') itemHeight = 65;
-                    if (line.isGenderSpecific) itemHeight = 80;
-                    if (line.type === 'matrix') {
-                        itemHeight = 60 + ((line.matrixRows || []).length * 40);
-                    }
-                    groupHeight += itemHeight;
+                    if (line.type === 'header_main') mainHeader = line;
+                    groupHeight += getItemHeight(line);
                 });
 
                 const isLastGroup = groupIdx === groups.length - 1;
@@ -665,7 +686,6 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
                             currentHeight = groupHeight;
                         } else {
                             // Too big even for a fresh page - we must start it here and split
-                            // or better, if there's enough space, start it here, otherwise fresh page
                             if (currentHeight < HEIGHT_LIMIT * 0.3) {
                                 // Already at top-ish, start and split
                                 fillAndSplit(group, pages, currentHeight, HEIGHT_LIMIT, mainHeader);
@@ -697,13 +717,7 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
             if (pages.length === 0) pages.push([]);
 
             group.lines.forEach((line, lIdx) => {
-                let itemH = 45;
-                if (line.type === 'header_main') itemH = 130;
-                if (line.type === 'subheading') itemH = 65;
-                if (line.isGenderSpecific) itemH = 80;
-                if (line.type === 'matrix') {
-                    itemH = 60 + ((line.matrixRows || []).length * 40);
-                }
+                let itemH = getItemHeight(line);
 
                 if (h + itemH > limit) {
                     // Move to new page
@@ -736,12 +750,7 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
             let h = 0;
             if (!lines) return 0;
             lines.forEach(line => {
-                let ih = 45;
-                if (line.type === 'header_main') ih = 130;
-                if (line.type === 'subheading') ih = 65;
-                if (line.isGenderSpecific) ih = 80;
-                if (line.type === 'matrix') ih = 60 + ((line.matrixRows || []).length * 40);
-                h += ih;
+                h += getItemHeight(line);
             });
             return h;
         }
