@@ -18,14 +18,14 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
     const lastBatchRef = useRef(null);
 
     const [patientInfo, setPatientInfo] = useState({
-        name: "WALK-IN PATIENT",
-        id: "AL-2026-...",
-        age: "32",
+        name: "",
+        id: "",
+        age: "",
         gender: "Male",
         date: new Date().toLocaleDateString(),
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }),
-        labNo: "10928",
-        refBy: localStorage.getItem('lastRefBy') || "DR. SALMAN KHAN"
+        labNo: "",
+        refBy: localStorage.getItem('lastRefBy') || ""
     });
 
     // Fetch initial sequential ID
@@ -37,24 +37,11 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
     const [searchTerm, setSearchTerm] = useState("");
     const [labInfo, setLabInfo] = useState({
         name: "AL-IMRAN",
-        brand: " LABORATORY",
-        tagline: "Advanced Diagnostic & Research Center",
+        brand: "MEDICAL STORE, DENTAL CLINIC AND LABORATORY",
     });
-    const [printerStatus, setPrinterStatus] = useState({ name: 'Checking...', status: 'Offline' });
 
-    // Load Printer Status
-    useEffect(() => {
-        const fetchStatus = async () => {
-            if (window.electronAPI && window.electronAPI.getPrinterStatus) {
-                const status = await window.electronAPI.getPrinterStatus();
-                setPrinterStatus(status);
-            }
-        };
 
-        fetchStatus();
-        const interval = setInterval(fetchStatus, 5000); // Poll every 5s
-        return () => clearInterval(interval);
-    }, []);
+
 
     const filteredTemplates = allTemplates.filter(t =>
         t.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -117,7 +104,7 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
         try {
             // Automatically assign next patient ID if it's currently empty/default and we're starting a report
             // We do this non-blockingly to avoid UI hang
-            if (!isHistoryMode && activeReportLines.length === 0 && (patientInfo.name === "" || patientInfo.name === "WALK-IN PATIENT")) {
+            if (!isHistoryMode && activeReportLines.length === 0 && patientInfo.name === "") {
                 updatePatientId();
             }
 
@@ -314,12 +301,12 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
 
 
     const getReportGridStyle = (config) => {
-        if (!config) return { display: 'grid', gridTemplateColumns: '3.5fr 0.7fr 2.3fr 1.5fr', gap: '1rem' };
+        if (!config) return { display: 'grid', gridTemplateColumns: '2.5fr 1fr 2.5fr 2fr', gap: '1rem' };
         const parts = [];
-        if (config.showTest) parts.push("3.5fr");
-        if (config.showUnit) parts.push("0.7fr");
-        if (config.showValue) parts.push("2.3fr");
-        if (config.showResult) parts.push("1.5fr");
+        if (config.showTest) parts.push("2.5fr");
+        if (config.showUnit) parts.push("1fr");
+        if (config.showValue) parts.push("2.5fr");
+        if (config.showResult) parts.push("2fr");
         return {
             display: 'grid',
             gridTemplateColumns: parts.join(" "),
@@ -609,7 +596,7 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
             date: new Date().toLocaleDateString(),
             time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }),
             labNo: "",
-            refBy: localStorage.getItem('lastRefBy') || "DR. SALMAN KHAN"
+            refBy: localStorage.getItem('lastRefBy') || ""
         });
         setIsHistoryMode(false);
     };
@@ -617,16 +604,24 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
     const renderPages = () => {
         const pages = [];
         let currentHeight = 0;
-        const HEIGHT_LIMIT = 900; // Increased to better utilize A4 space below letterhead
-        const SIGNATURE_HEIGHT = 0;
+        // Total A4 height (297mm) is ~1122px at 96dpi.
+        // Letterhead (~180px) + Patient Info (~110px) + Page Padding (151px) + Footer (40px) = ~481px.
+        // Remaining space for test rows = 1122 - 481 = ~640px.
+        const HEIGHT_LIMIT = 580; // Safety margin to avoid overlap with footer
+        const SIGNATURE_HEIGHT = 80;
 
         const getItemHeight = (line) => {
-            let itemH = 45;
-            if (line.type === 'header_main') itemH = 130;
-            if (line.type === 'subheading') itemH = 65;
-            if (line.isGenderSpecific) itemH = 80;
+            // Heights in pixels (approx)
+            let itemH = 40; // Standard test row height
+            if (line.type === 'header_main') itemH = 120;
+            if (line.type === 'subheading') itemH = 50;
+            if (line.isGenderSpecific) itemH = 90;
             if (line.type === 'matrix') {
                 itemH = 60 + ((line.matrixRows || []).length * 40);
+            }
+            if (line.gridConfig) {
+                // Grid sections have headers and rows
+                itemH = 100 + ((line.gridTests || []).length * 40);
             }
             return itemH;
         };
@@ -646,14 +641,19 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
                     const lastGroup = groups[groups.length - 1];
                     const lastLineInGroup = lastGroup.lines[lastGroup.lines.length - 1];
 
+                    // Start new group if batch changes OR if we hit a subheading
+                    // This ensures the subheading and all its following rows stay together
                     if (lastGroup.batchId !== line.batchId) {
                         startNewGroup = true;
                     } else if (line.type === 'subheading') {
-                        // Subheadings start a new group to keep them with their subsequent rows
-                        // EXCEPT if the previous item was the main header (keep them together)
+                        // ALWAYS start a new group on a subheading to keep it with its kids
+                        // UNLESS the previous line was the main header (keep header+subheading together)
                         if (lastLineInGroup.type !== 'header_main') {
                             startNewGroup = true;
                         }
+                    } else if (line.type === 'test' && !line.gridConfig && lastLineInGroup.type === 'subheading') {
+                        // If it's a test following a subheading, keep it in same group
+                        startNewGroup = false;
                     }
                 }
 
@@ -759,19 +759,21 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
             <div key={pageIdx} className="a4-page mb-10 mx-auto">
                 {/* LAB LETTERHEAD - Professional Pathology Style */}
                 <div className="border-b-4 border-slate-900 pb-4 mb-4 relative">
-                    <div className="flex justify-between items-end">
-                        <div className="flex gap-4 items-center">
-                            <img src={docLogo} alt="Lab Logo" className="h-40 w-auto object-contain" />
-                            <div className="text-left">
-                                <h1 className="text-3xl font-black text-slate-900 uppercase leading-none whitespace-nowrap">
-                                    {labInfo.name || "AL-IMRAN"}&nbsp; <span className="text-slate-800">{labInfo.brand || "LABORATORY"}</span>
+                    <div className="flex justify-between items-start">
+                        <div className="flex gap-4 items-start">
+                            <img src={docLogo} alt="Lab Logo" className="h-32 w-auto object-contain flex-shrink-0" />
+                            <div className="text-left flex-1">
+                                <h1 className="text-3xl font-black text-slate-900 uppercase leading-tight">
+                                    {labInfo.name || "AL-IMRAN"}
                                 </h1>
-                                <p className="text-[8px] font-black uppercase tracking-[0.2em] text-slate-500 mt-1">{labInfo.tagline || "Advanced Diagnostic & Research Center"}</p>
+                                <p className="text-sm font-bold text-slate-800 uppercase leading-tight mt-1">
+                                    {labInfo.brand || "LABORATORY"}
+                                </p>
                             </div>
                         </div>
-                        <div className="text-right text-[8px] font-bold text-slate-600 space-y-0.5 pb-1">
+                        <div className="text-left text-[8px] font-bold text-slate-600 space-y-0.5">
+                            <p>Al-Madina Public School</p>
                             <p>Luqman Banda</p>
-                            <p>AL</p>
                             <p>PHONE: +880 1234 567890</p>
                         </div>
                     </div>
@@ -832,20 +834,20 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
                             if (line.type === 'header_main') {
                                 const config = line.columnConfig || {};
                                 return (
-                                    <div key={idx} id={line.batchId} className="mt-8 mb-6 text-center relative group/header">
-                                        <input
-                                            type="text"
-                                            value={line.text}
-                                            readOnly={true}
-                                            className="text-lg font-black uppercase tracking-[0.2em] text-slate-900 border-y-2 border-slate-900 py-1.5 w-full text-center bg-transparent outline-none cursor-default"
-                                        />
+                                    <div key={idx} id={line.batchId} className="mt-10 mb-8 text-center relative group/header">
+                                        <div className="inline-block border-b-2 border-slate-900 pb-1.5 px-4 mb-2">
+                                            <h2 className="text-2xl font-black uppercase tracking-[0.25em] text-slate-900">
+                                                {line.text}
+                                            </h2>
+                                        </div>
                                         {line.subtitle && (
-                                            <input
-                                                type="text"
-                                                value={line.subtitle}
-                                                readOnly={true}
-                                                className="text-[10px] font-bold text-slate-700 mt-2 uppercase tracking-[0.3em] w-full text-center bg-transparent outline-none cursor-default"
-                                            />
+                                            <div className="flex justify-center mt-2">
+                                                <div className="inline-block border-b border-slate-400 pb-0.5 px-3">
+                                                    <div className="text-[10px] font-bold text-slate-700 uppercase tracking-[0.3em] text-center">
+                                                        {line.subtitle}
+                                                    </div>
+                                                </div>
+                                            </div>
                                         )}
                                         {/* Undo / Remove Button */}
                                         {!isHistoryMode && (
@@ -860,7 +862,7 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
 
                                         {/* DYNAMIC COLUMN HEADERS - Only show on first instance, not on repeated (Contd.) headers */}
                                         {!line.isRepeated && (
-                                            <div style={getReportGridStyle(config)} className="report-table-header items-center mt-6">
+                                            <div style={getReportGridStyle(config)} className="report-table-header items-center mt-8 border-b-2 border-slate-900 pb-2 mb-2 font-black text-[9px] uppercase text-slate-500 tracking-widest">
                                                 {config.showTest && <span className="text-left">{config.testLabel || "Investigation"}</span>}
                                                 {config.showUnit && <span className="text-center">{config.unitLabel || "Unit"}</span>}
                                                 {config.showValue && <span className="text-center">{config.valueLabel || "Reference Range"}</span>}
@@ -906,8 +908,12 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
                                 return (
                                     <div key={idx} className="mt-8 mb-8 page-break-inside-avoid px-2">
                                         {line.title && (
-                                            <div className="text-[12px] font-black uppercase tracking-[0.2em] text-slate-900 border-b-2 border-slate-900 pb-1.5 mb-6 text-center italic">
-                                                {line.title}
+                                            <div className="flex justify-center mb-6">
+                                                <div className="inline-block border-b border-slate-900 pb-1 px-3">
+                                                    <div className="text-[12px] font-black uppercase tracking-[0.2em] text-slate-900 text-center italic">
+                                                        {line.title}
+                                                    </div>
+                                                </div>
                                             </div>
                                         )}
                                         <div className="w-full">
@@ -925,7 +931,7 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
 
                                             {/* Matrix Rows */}
                                             {(line.matrixRows || []).map((row, ri) => (
-                                                <div key={ri} className="flex border-b border-slate-100 py-3 items-center hover:bg-slate-50 transition-colors group">
+                                                <div key={ri} className="flex border-b border-slate-100 py-2 items-center hover:bg-slate-50 transition-colors group">
                                                     <div className="w-1/3 font-bold text-[10px] text-slate-800 uppercase tracking-tight pl-2">
                                                         {row.name}
                                                     </div>
@@ -979,13 +985,21 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
                                 return (
                                     <div key={idx} className="mt-8 mb-4">
                                         {hasTitle && (
-                                            <div className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-900 border-y-2 border-slate-900 py-1.5 w-full text-center">
-                                                {line.text}
+                                            <div className="flex justify-center mb-1">
+                                                <div className="inline-block border-b border-slate-900 pb-0.5 px-2">
+                                                    <div className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-900 text-center">
+                                                        {line.text}
+                                                    </div>
+                                                </div>
                                             </div>
                                         )}
                                         {hasSubtext && (
-                                            <div className={`${hasTitle ? 'text-[9px] font-bold text-slate-600 mt-2 uppercase tracking-[0.3em]' : 'text-[10px] font-black uppercase tracking-[0.15em] text-slate-900'} w-full text-center`}>
-                                                {line.subtext}
+                                            <div className="flex justify-center mt-2">
+                                                <div className="inline-block border-b border-slate-400 pb-0.5 px-2">
+                                                    <div className={`${hasTitle ? 'text-[9px] font-bold text-slate-600 uppercase tracking-[0.3em]' : 'text-[10px] font-black uppercase tracking-[0.15em] text-slate-900'} text-center`}>
+                                                        {line.subtext}
+                                                    </div>
+                                                </div>
                                             </div>
                                         )}
 
@@ -1012,7 +1026,7 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
 
                             // Standard test row rendering
                             return (
-                                <div key={idx} style={getReportGridStyle(line.columnConfig)} className="report-row items-start">
+                                <div key={idx} style={getReportGridStyle(line.columnConfig)} className="report-row items-center border-b border-slate-100 py-2 hover:bg-slate-50/50 transition-colors group/row">
                                     {line.columnConfig?.showTest && (
                                         <div className="font-black text-slate-900 uppercase text-[10px] leading-tight break-words py-1">
                                             {line.name}
@@ -1023,7 +1037,7 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
                                             type="text"
                                             value={line.unit}
                                             readOnly={true}
-                                            className="text-center italic font-serif text-[9px] text-slate-900 bg-transparent outline-none w-full cursor-default"
+                                            className="text-left pl-4 italic font-serif text-[9px] text-slate-900 bg-transparent outline-none w-full cursor-default"
                                         />
                                     )}
                                     {line.columnConfig?.showValue && (
@@ -1036,22 +1050,26 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
                                                             type="text"
                                                             value={range}
                                                             readOnly={true}
-                                                            className="w-full text-center bg-transparent outline-none font-bold text-[8px] border-b border-transparent cursor-default"
+                                                            className="w-full text-center bg-transparent outline-none font-bold text-[9px] border-b border-transparent cursor-default"
                                                         />
                                                     ))}
                                                 </div>
                                             ) : line.isGenderSpecific ? (
                                                 (line.maleLow || line.maleHigh || line.femaleLow || line.femaleHigh) ? (
-                                                    <div className="flex items-center gap-1 bg-slate-50 px-2 py-0.5 rounded border border-slate-100">
-                                                        <input type="text" value={line.maleLow} readOnly={true} className="w-4 bg-transparent outline-none text-center cursor-default" />
-                                                        <span>-</span>
-                                                        <input type="text" value={line.maleHigh} readOnly={true} className="w-4 bg-transparent outline-none text-center cursor-default" />
-                                                        <span className="text-[6px] opacity-60">(M)</span>
-                                                        <span className="mx-1 opacity-20">|</span>
-                                                        <input type="text" value={line.femaleLow} readOnly={true} className="w-4 bg-transparent outline-none text-center cursor-default" />
-                                                        <span>-</span>
-                                                        <input type="text" value={line.femaleHigh} readOnly={true} className="w-4 bg-transparent outline-none text-center cursor-default" />
-                                                        <span className="text-[6px] opacity-60">(F)</span>
+                                                    <div className="flex items-center gap-1 bg-slate-50 px-2 py-0.5 rounded border border-slate-100 max-w-full justify-center mx-auto overflow-hidden">
+                                                        <div className="flex items-center gap-0.5 whitespace-nowrap">
+                                                            <input type="text" value={line.maleLow} readOnly={true} className="w-6 bg-transparent outline-none text-right cursor-default text-[9px]" />
+                                                            <span>-</span>
+                                                            <input type="text" value={line.maleHigh} readOnly={true} className="w-6 bg-transparent outline-none text-left cursor-default text-[9px]" />
+                                                            <span className="text-[6px] opacity-60 ml-0.5">(M)</span>
+                                                        </div>
+                                                        <span className="mx-1.5 opacity-20 text-[10px]">|</span>
+                                                        <div className="flex items-center gap-0.5 whitespace-nowrap">
+                                                            <input type="text" value={line.femaleLow} readOnly={true} className="w-6 bg-transparent outline-none text-right cursor-default text-[9px]" />
+                                                            <span>-</span>
+                                                            <input type="text" value={line.femaleHigh} readOnly={true} className="w-6 bg-transparent outline-none text-left cursor-default text-[9px]" />
+                                                            <span className="text-[6px] opacity-60 ml-0.5">(F)</span>
+                                                        </div>
                                                     </div>
                                                 ) : null
                                             ) : (
@@ -1064,10 +1082,10 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
                                                     />
                                                 ) : (
                                                     (line.normalLow || line.normalHigh) ? (
-                                                        <div className="flex items-center gap-1">
-                                                            <input type="text" value={line.normalLow} readOnly={true} className="w-8 bg-transparent outline-none text-right cursor-default" />
+                                                        <div className="flex items-center gap-1 w-full justify-center">
+                                                            <input type="text" value={line.normalLow} readOnly={true} className="flex-1 bg-transparent outline-none text-right cursor-default min-w-0" />
                                                             <span>-</span>
-                                                            <input type="text" value={line.normalHigh} readOnly={true} className="w-8 bg-transparent outline-none text-left cursor-default" />
+                                                            <input type="text" value={line.normalHigh} readOnly={true} className="flex-1 bg-transparent outline-none text-left cursor-default min-w-0" />
                                                         </div>
                                                     ) : null
                                                 )
@@ -1092,11 +1110,11 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
                                                     readOnly={isHistoryMode}
                                                     rows={1}
                                                     onChange={(e) => handleLineChange(idx, 'result', e.target.value)}
-                                                    className={`w-full text-right border-b outline-none font-black bg-transparent transition-all resize-none overflow-hidden py-0.5 ${isHistoryMode ? 'border-transparent' : 'border-slate-100 hover:border-slate-300'} text-black ${(line.result || "").length > 25 ? 'text-[7px] leading-[1.1]' :
+                                                    className={`w-full text-right border-b outline-none font-black transition-all resize-none overflow-hidden py-0.5 ${isHistoryMode ? 'border-transparent' : 'border-slate-100 hover:border-slate-300'} ${!line.result && !isHistoryMode ? 'bg-slate-200' : 'bg-transparent'} no-print-bg text-black ${(line.result || "").length > 25 ? 'text-[7px] leading-[1.1]' :
                                                         (line.result || "").length > 15 ? 'text-[9px] leading-tight' :
                                                             'text-[11px]'
                                                         }`}
-                                                    placeholder="0.00"
+                                                    placeholder=""
                                                     style={{ height: '28px' }}
                                                 />
                                             )}
@@ -1118,19 +1136,7 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
                     )}
                 </div>
 
-                <div className="mt-auto pt-2 border-t border-slate-200 text-center">
-                    <div className="flex items-center justify-between text-[6px] font-black text-slate-400 uppercase tracking-widest">
-                        <div className="flex items-center gap-4">
-                            {pageIdx === pages.length - 1 && (
-                                <>
-                                    <span>End of Report</span>
-                                    <div className="w-1 h-1 bg-slate-200 rounded-full"></div>
-                                </>
-                            )}
-                            <span>Page {pageIdx + 1} of {pages.length}</span>
-                        </div>
-                    </div>
-                </div>
+
             </div>
         ));
     };
@@ -1340,17 +1346,7 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
 
                     <div className="mt-6 pt-6 border-t border-slate-200 no-print space-y-3">
                         <div className="flex flex-col gap-3">
-                            <div className="flex items-center justify-between px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl">
-                                <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest truncate max-w-[120px]">
-                                    {printerStatus.name}
-                                </span>
-                                <div className="flex items-center gap-2">
-                                    <div className={`w-2 h-2 rounded-full ${printerStatus.status === 'Online' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]'}`}></div>
-                                    <span className={`text-[8px] font-black uppercase tracking-widest ${printerStatus.status === 'Online' ? 'text-green-600' : 'text-red-600'}`}>
-                                        {printerStatus.status}
-                                    </span>
-                                </div>
-                            </div>
+
                             <button
                                 onClick={handlePrintWorkflow}
                                 className="w-full py-4 bg-slate-900 text-white rounded-xl font-black text-[10px] uppercase tracking-[0.2em] shadow-lg transition-all hover:bg-black active:scale-95 flex items-center justify-center gap-3"

@@ -18,8 +18,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     // Database Management
     exportDb: () => ipcRenderer.invoke('export-db'),
     importDb: () => ipcRenderer.invoke('import-db'),
-    // Printer Status
-    getPrinterStatus: () => ipcRenderer.invoke('get-printer-status'),
+
     // Next ID
     getNextPatientId: () => ipcRenderer.invoke('get-next-patient-id'),
     // Delete All

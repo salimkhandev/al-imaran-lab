@@ -70,24 +70,20 @@
     animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-/* A4 Page Simulation - Fluid on Screen, Fixed on Print */
+/* A4 Page Simulation - Fixed dimensions for perfect PDF sync */
 .a4-container {
     background: #f1f5f9;
-    padding: 40px;
+    padding: 40px 0;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 30px;
     min-height: 100vh;
-    /* Remove scale and fixed centering to allow full-width */
 }
 
 .a4-page {
-    width: 100%;
-    /* Full width on screen */
-    max-width: 1400px;
-    /* Optional cap to prevent excessive stretching on ultra-wide screens */
-    min-height: 297mm;
+    width: 210mm;
+    height: 297mm;
     background: white;
     padding: 20mm;
     box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
@@ -97,7 +93,8 @@
     color: #1e293b;
     font-family: 'Inter', sans-serif;
     transition: all 0.3s ease;
-    border-radius: 1rem;
+    border-radius: 4px;
+    overflow: hidden;
 }
 
 @media print {
@@ -167,41 +164,36 @@
         print-color-adjust: exact;
     }
 
-    /* Vanish all non-critical UI borders */
-    .border-slate-50,
-    .border-slate-100,
-    .border-slate-200 {
-        border-color: transparent !important;
-        border-width: 0 !important;
-    }
-
-    /* INPUT RESET FOR PRINT: Make inputs look like static text */
-    input {
-        border: none !important;
-        outline: none !important;
-        background: transparent !important;
-        padding: 0 !important;
-        margin: 0 !important;
-        color: inherit !important;
-        appearance: none;
-    }
-
-    /* Maintain vital report borders */
+    /* MAINTAIN VITAL REPORT BORDERS */
     .border-slate-900,
     .border-b-4,
-    .border-y-2,
-    .border-t {
+    .border-b-2,
+    .border-b {
         border-color: #0f172a !important;
     }
 
+    /* Keep subtle rules visible in print */
+    .border-slate-100 {
+        border-color: #e2e8f0 !important;
+        border-bottom-width: 1px !important;
+    }
+
+    /* Remove the full-width header overrides that were breaking the text-width style */
     .report-table-header {
-        background-color: #f8fafc !important;
-        border-top: 2px solid #0f172a !important;
-        border-bottom: 2px solid #0f172a !important;
+        background-color: transparent !important;
+        border-top: none !important;
+        border-bottom: none !important;
     }
 }
 
 /* Force page breaks for elements */
 .page-break {
     page-break-before: always;
+}
+
+@media print {
+    .no-print-bg {
+        background-color: transparent !important;
+        background: none !important;
+    }
 }

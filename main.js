@@ -173,26 +173,7 @@ app.whenReady().then(() => {
         return { success: false, message: 'Import cancelled' };
     });
 
-    // PRINTER STATUS
-    ipcMain.handle('get-printer-status', async (event) => {
-        try {
-            const printers = await event.sender.getPrintersAsync();
-            const defaultPrinter = printers.find(p => p.isDefault) || printers[0];
 
-            if (!defaultPrinter) return { name: 'No Printer Found', status: 'Offline' };
-
-            // Electron's status: 0=good, otherwise usually busy or offline
-            // However, getPrinters() doesn't always reflect live 'Offline' real-time accurately without a print job,
-            // but we can use the 'status' or 'isDefault' and simply report what Electron sees.
-            return {
-                name: defaultPrinter.name,
-                status: defaultPrinter.status === 0 ? 'Online' : 'Offline'
-            };
-        } catch (err) {
-            console.error('Printer status error:', err);
-            return { name: 'Error', status: 'Offline' };
-        }
-    });
 
     ipcMain.handle('get-next-patient-id', () => {
         try {

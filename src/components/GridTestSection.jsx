@@ -6,9 +6,17 @@ export default function GridTestSection({ section, tests, isHistoryMode, onResul
     return (
         <div className="mt-6 mb-8 page-break-inside-avoid">
             {/* Grid Header */}
+            <div className="flex justify-center mb-6">
+                <div className="inline-block border-b-2 border-slate-900 pb-1 px-4">
+                    <h3 className="text-[12px] font-black uppercase tracking-[0.2em] text-slate-900 text-center">
+                        {section.text || "Investigation"}
+                    </h3>
+                </div>
+            </div>
+
             <div className="flex border-b-2 border-slate-900 pb-2 mb-2">
                 <div className="w-1/3 font-black text-[10px] uppercase text-slate-500 tracking-widest pl-2">
-                    {section.text || "Investigation"}
+                    &nbsp;
                 </div>
                 <div className="flex-1 flex justify-around">
                     {labels.map((label, idx) => (
@@ -21,7 +29,7 @@ export default function GridTestSection({ section, tests, isHistoryMode, onResul
 
             {/* Grid Rows */}
             {tests.map((test, tIdx) => (
-                <div key={tIdx} className="flex border-b border-slate-100 py-2.5 items-center hover:bg-slate-50 transition-colors group">
+                <div key={tIdx} className="flex border-b border-slate-100 py-2 items-center hover:bg-slate-50 transition-colors group">
                     <div className="w-1/3 font-bold text-[10px] text-slate-800 uppercase tracking-tight pl-2">
                         {test.name}
                     </div>
