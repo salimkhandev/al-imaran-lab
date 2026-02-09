@@ -261,15 +261,15 @@ export default function TestTemplateForm({ onTemplateCreated, initialTemplate })
     };
 
     return (
-        <section className="bg-black min-h-screen w-full px-4 py-12 md:p-12">
+        <section className="min-h-screen w-full px-4 py-12 md:p-12">
             <div className="max-w-5xl mx-auto px-10 py-8 transform scale-[0.95] origin-top">
-                <div className="bg-[#161b2c] rounded-[2.5rem] shadow-2xl border border-slate-800 overflow-hidden">
+                <div className="bg-white rounded-[2.5rem] shadow-2xl border border-slate-200 overflow-hidden">
                     <div className="p-8 space-y-8">
                         {/* HEADER SECTION */}
                         <div className="flex justify-between items-start">
                             <div>
-                                <h1 className="text-4xl font-black text-white uppercase tracking-tight">Tests Designer</h1>
-                                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1">Structure laboratory test modules</p>
+                                <h1 className="text-4xl font-black text-slate-900 uppercase tracking-tight">Tests Designer</h1>
+                                <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mt-1">Structure laboratory test modules</p>
                             </div>
                             {initialTemplate && (
                                 <span className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-black uppercase tracking-widest">
@@ -279,13 +279,13 @@ export default function TestTemplateForm({ onTemplateCreated, initialTemplate })
                         </div>
 
                         <form onSubmit={handleSubmit} className="space-y-10">
-                            <div className="bg-[#1e2538] p-8 rounded-2xl border border-slate-800 shadow-sm mb-8">
+                            <div className="bg-slate-50/50 p-8 rounded-2xl border border-slate-200 shadow-sm mb-8">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
                                     <div className="space-y-3">
                                         <label className="text-sm font-black text-slate-400 uppercase tracking-widest ml-1">Main Report Title</label>
                                         <input
                                             type="text"
-                                            className="w-full text-lg font-black bg-[#161b2c] text-white border-2 border-slate-700 rounded-lg px-5 py-3 focus:border-indigo-500 outline-none transition-all placeholder:text-slate-500"
+                                            className="w-full text-lg font-black bg-white text-slate-900 border-2 border-slate-200 rounded-lg px-5 py-3 focus:border-indigo-500 outline-none transition-all placeholder:text-slate-300"
                                             value={mainTestName}
                                             onChange={(e) => setMainTestName(e.target.value)}
                                             placeholder="e.g. COMPLETE BLOOD COUNT"
@@ -296,7 +296,7 @@ export default function TestTemplateForm({ onTemplateCreated, initialTemplate })
                                         <label className="text-sm font-black text-slate-400 uppercase tracking-widest ml-1">Sub-Header (Optional)</label>
                                         <input
                                             type="text"
-                                            className="w-full text-base font-medium bg-[#161b2c] text-white border-2 border-slate-700 rounded-lg px-5 py-3 focus:border-indigo-500 outline-none transition-all placeholder:text-slate-500"
+                                            className="w-full text-base font-medium bg-white text-slate-900 border-2 border-slate-200 rounded-lg px-5 py-3 focus:border-indigo-500 outline-none transition-all placeholder:text-slate-300"
                                             value={mainConfig.subtitle}
                                             onChange={(e) => handleMainConfigChange('subtitle', e.target.value)}
                                             placeholder="e.g. Automated Hematology Analysis"
@@ -305,7 +305,7 @@ export default function TestTemplateForm({ onTemplateCreated, initialTemplate })
                                 </div>
 
                                 {/* MAIN HEADER CONFIGURATION */}
-                                <div className="pt-8 border-t border-slate-800">
+                                <div className="pt-8 border-t border-slate-200">
                                     <div className="flex items-center justify-between mb-6">
                                         <label className="text-xs font-black text-slate-400 uppercase flex items-center gap-2">
                                             <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
@@ -314,29 +314,29 @@ export default function TestTemplateForm({ onTemplateCreated, initialTemplate })
 
                                         <div className="flex gap-2">
                                             {!mainConfig.showTest && (
-                                                <button type="button" onClick={() => handleMainConfigChange('showTest', true)} className="text-[10px] bg-[#161b2c] text-white px-4 py-2 rounded-lg border border-slate-700 font-black hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all uppercase shadow-sm">
+                                                <button type="button" onClick={() => handleMainConfigChange('showTest', true)} className="text-[10px] bg-white text-slate-600 px-4 py-2 rounded-lg border border-slate-200 font-black hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all uppercase shadow-sm">
                                                     + Test Name
                                                 </button>
                                             )}
                                             {!mainConfig.showUnit && (
-                                                <button type="button" onClick={() => handleMainConfigChange('showUnit', true)} className="text-[10px] bg-[#161b2c] text-white px-4 py-2 rounded-lg border border-slate-700 font-black hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all uppercase shadow-sm">
+                                                <button type="button" onClick={() => handleMainConfigChange('showUnit', true)} className="text-[10px] bg-white text-slate-600 px-4 py-2 rounded-lg border border-slate-200 font-black hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all uppercase shadow-sm">
                                                     + Unit
                                                 </button>
                                             )}
                                             {!mainConfig.showValue && (
-                                                <button type="button" onClick={() => handleMainConfigChange('showValue', true)} className="text-[10px] bg-[#161b2c] text-white px-4 py-2 rounded-lg border border-slate-700 font-black hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all uppercase shadow-sm">
+                                                <button type="button" onClick={() => handleMainConfigChange('showValue', true)} className="text-[10px] bg-white text-slate-600 px-4 py-2 rounded-lg border border-slate-200 font-black hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all uppercase shadow-sm">
                                                     + Ref. Range
                                                 </button>
                                             )}
                                             {!mainConfig.showResult && (
-                                                <button type="button" onClick={() => handleMainConfigChange('showResult', true)} className="text-[10px] bg-[#161b2c] text-white px-4 py-2 rounded-lg border border-slate-700 font-black hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all uppercase shadow-sm">
+                                                <button type="button" onClick={() => handleMainConfigChange('showResult', true)} className="text-[10px] bg-white text-slate-600 px-4 py-2 rounded-lg border border-slate-200 font-black hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all uppercase shadow-sm">
                                                     + Result
                                                 </button>
                                             )}
                                         </div>
                                     </div>
 
-                                    <div style={mainGridStyle} className="bg-[#161b2c] text-white rounded-xl py-3 px-6 text-[10px] font-black uppercase tracking-widest border border-slate-700 shadow-sm">
+                                    <div style={mainGridStyle} className="bg-slate-100 text-slate-900 rounded-xl py-3 px-6 text-[10px] font-black uppercase tracking-widest border border-slate-200 shadow-sm">
                                         {mainConfig.showTest && (
                                             <div className="relative group/header flex items-center gap-2">
                                                 <input
@@ -378,19 +378,20 @@ export default function TestTemplateForm({ onTemplateCreated, initialTemplate })
                                             </div>
                                         )}
                                     </div>
-                                    <p className="text-[10px] text-slate-500 mt-3 ml-1">
+                                    <p className="text-[10px] text-slate-400 mt-3 ml-1">
                                         * Heads are editable. Use &times; to disable columns for this template.
                                     </p>
                                 </div>
                             </div>
 
+
                             <div className="space-y-4 relative">
                                 {items.length === 0 && (
-                                    <div className="text-center py-20 border-2 border-dashed border-slate-200 rounded-3xl bg-white shadow-sm">
-                                        <div className="w-20 h-20 bg-slate-50 rounded-full shadow-inner flex items-center justify-center mx-auto mb-6 border border-slate-200">
+                                    <div className="text-center py-20 border-2 border-dashed border-slate-200 rounded-3xl bg-slate-50 shadow-inner">
+                                        <div className="w-20 h-20 bg-white rounded-full shadow-sm flex items-center justify-center mx-auto mb-6 border border-slate-200">
                                             <IoAdd className="h-10 w-10 text-slate-300" />
                                         </div>
-                                        <p className="text-slate-500 font-bold text-lg uppercase tracking-widest">Add testing rows or sections below</p>
+                                        <p className="text-slate-400 font-bold text-lg uppercase tracking-widest">Add testing rows or sections below</p>
                                     </div>
                                 )}
 
@@ -811,15 +812,15 @@ export default function TestTemplateForm({ onTemplateCreated, initialTemplate })
                             </div>
 
                             <div className="grid grid-cols-3 gap-6 pt-10 border-t border-slate-200">
-                                <button type="button" onClick={addTestRow} className="flex items-center justify-center gap-3 bg-white border-2 border-slate-100 py-4 rounded-2xl text-xs font-black text-slate-500 hover:bg-indigo-600 hover:text-white hover:border-indigo-500 transition-all active:scale-95 group shadow-sm">
+                                <button type="button" onClick={addTestRow} className="flex items-center justify-center gap-3 bg-white border-2 border-slate-200 py-4 rounded-2xl text-xs font-black text-slate-500 hover:bg-slate-50 hover:text-indigo-600 hover:border-indigo-500 transition-all active:scale-95 group shadow-sm">
                                     <IoAdd className="h-6 w-6" />
                                     <span className="uppercase tracking-[0.2em]">Add Test Row</span>
                                 </button>
-                                <button type="button" onClick={addSubheading} className="flex items-center justify-center gap-3 bg-white border-2 border-slate-100 py-4 rounded-2xl text-xs font-black text-slate-500 hover:bg-indigo-600 hover:text-white hover:border-indigo-500 transition-all active:scale-95 group shadow-sm">
+                                <button type="button" onClick={addSubheading} className="flex items-center justify-center gap-3 bg-white border-2 border-slate-200 py-4 rounded-2xl text-xs font-black text-slate-500 hover:bg-slate-50 hover:text-indigo-600 hover:border-indigo-500 transition-all active:scale-95 group shadow-sm">
                                     <IoList className="h-6 w-6" />
                                     <span className="uppercase tracking-[0.2em]">Add Section Header</span>
                                 </button>
-                                <button type="button" onClick={addMatrixRow} className="flex items-center justify-center gap-3 bg-white border-2 border-slate-100 py-4 rounded-2xl text-xs font-black text-slate-500 hover:bg-indigo-600 hover:text-white hover:border-indigo-500 transition-all active:scale-95 group shadow-sm">
+                                <button type="button" onClick={addMatrixRow} className="flex items-center justify-center gap-3 bg-white border-2 border-slate-200 py-4 rounded-2xl text-xs font-black text-slate-500 hover:bg-slate-50 hover:text-indigo-600 hover:border-indigo-500 transition-all active:scale-95 group shadow-sm">
                                     <IoGridOutline className="h-6 w-6" />
                                     <span className="uppercase tracking-[0.2em]">Add Matrix Table</span>
                                 </button>
