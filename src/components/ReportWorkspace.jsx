@@ -28,6 +28,12 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
         refBy: localStorage.getItem('lastRefBy') || ""
     });
 
+    // Update States
+    const [updateStatus, setUpdateStatus] = useState("");
+    const [updateProgress, setUpdateProgress] = useState(0);
+    const [updateAvailable, setUpdateAvailable] = useState(false);
+    const [updateDownloaded, setUpdateDownloaded] = useState(false);
+
     // Fetch initial sequential ID
     useEffect(() => {
         if (!isHistoryMode && activeReportLines.length === 0) {
@@ -81,6 +87,90 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [activeMenuId, isMenuOpen]);
+
+    // Update Listeners
+    useEffect(() => {
+        if (window.electronAPI) {
+            window.electronAPI.onUpdateMessage((msg) => {
+                setUpdateStatus(msg);
+                console.log("Update Message:", msg);
+            });
+
+            window.electronAPI.onUpdateAvailable((info) => {
+                setUpdateAvailable(true);
+                setUpdateStatus(`Version ${info.version} is available.`);
+                Swal.fire({
+                    title: 'New Update Available',
+                    html: `
+                        <div class="text-left space-y-2">
+                            <p class="text-sm font-bold text-slate-700">A new version (${info.version}) has been released.</p>
+                            <p class="text-xs text-slate-500">Would you like to download and install it now?</p>
+                        </div>
+                    `,
+                    icon: 'info',
+                    showCancelButton: true,
+                    confirmButtonText: 'Download Now',
+                    cancelButtonText: 'Maybe Later',
+                    confirmButtonColor: '#2563eb',
+                    cancelButtonColor: '#64748b'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.electronAPI.startDownload();
+                        setUpdateStatus("Starting download...");
+                    } else {
+                        setUpdateStatus("Update postponed.");
+                    }
+                });
+            });
+
+            window.electronAPI.onUpdateError((err) => {
+                const cleanError = typeof err === 'string' ? err.split('\n')[0] : 'Check for updates failed.';
+                setUpdateStatus(`Error: ${cleanError}`);
+                console.error("Update Error:", err);
+            });
+
+            window.electronAPI.onDownloadProgress((progress) => {
+                const percent = Math.floor(progress.percent);
+                setUpdateProgress(percent);
+                setUpdateStatus(`Downloading: ${percent}%`);
+
+                // Optional: You could show a small toast or non-intrusive progress here
+            });
+
+            window.electronAPI.onUpdateDownloaded((info) => {
+                setUpdateDownloaded(true);
+                setUpdateStatus('Update ready to install.');
+                Swal.fire({
+                    title: 'Restart Required',
+                    text: `Version ${info.version} has been downloaded. Restart the app now to complete the installation?`,
+                    icon: 'success',
+                    showCancelButton: true,
+                    confirmButtonText: 'Restart & Install',
+                    cancelButtonText: 'Later',
+                    confirmButtonColor: '#059669',
+                    cancelButtonColor: '#64748b'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        setUpdateStatus("Installing and restarting...");
+                        window.electronAPI.installUpdate();
+                    }
+                });
+            });
+        }
+    }, []);
+
+    const handleCheckUpdate = async () => {
+        setUpdateStatus("Checking for updates...");
+        try {
+            const result = await window.electronAPI.checkForUpdates();
+            if (result && result.message) {
+                setUpdateStatus(result.message);
+            }
+        } catch (err) {
+            console.error("Failed to check for updates:", err);
+            setUpdateStatus("Failed to check for updates.");
+        }
+    };
 
     const loadSavedReport = async (id) => {
         try {
@@ -1339,6 +1429,41 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
                                                 <div className="w-2 h-2 rounded-full bg-red-600"></div>
                                                 Wipe All Templates
                                             </button>
+
+                                            <div className="h-px bg-slate-100 my-1 mx-2"></div>
+                                            <div className="px-4 py-2">
+                                                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Update System</h4>
+                                            </div>
+                                            <button
+                                                onClick={() => { handleCheckUpdate(); setIsMenuOpen(false); }}
+                                                className="w-full text-left px-4 py-3 text-[11px] font-black text-blue-600 hover:bg-blue-600 hover:text-white transition-all flex items-center gap-3"
+                                            >
+                                                <div className="w-2 h-2 rounded-full bg-blue-400"></div>
+                                                Check for Updates
+                                            </button>
+                                            {updateStatus && (
+                                                <div className="px-4 py-2 space-y-2">
+                                                    <div
+                                                        className="text-[8px] font-black text-slate-500 uppercase tracking-widest flex justify-between items-center gap-2 overflow-hidden cursor-pointer hover:bg-slate-50 transition-colors p-1 rounded"
+                                                        onClick={() => {
+                                                            if (updateStatus && updateStatus.includes('Error')) {
+                                                                Swal.fire({ title: 'Sync Details', text: updateStatus, icon: 'info' });
+                                                            }
+                                                        }}
+                                                    >
+                                                        <span className="whitespace-nowrap">Status:</span>
+                                                        <span className="truncate flex-1 text-right">{updateStatus}</span>
+                                                    </div>
+                                                    {updateProgress > 0 && updateProgress < 100 && (
+                                                        <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
+                                                            <div
+                                                                className="h-full bg-blue-600 transition-all duration-300"
+                                                                style={{ width: `${updateProgress}%` }}
+                                                            ></div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                 </div>

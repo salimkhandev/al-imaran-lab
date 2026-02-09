@@ -1,7 +1,12 @@
 const { app, BrowserWindow, ipcMain, dialog, Menu } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const { autoUpdater } = require('electron-updater');
 const db = require('./database');
+
+// Configure autoUpdater
+autoUpdater.autoDownload = false; // We want to show a button first
+autoUpdater.autoInstallOnAppQuit = true;
 
 function createWindow() {
     const win = new BrowserWindow({
@@ -26,11 +31,54 @@ function createWindow() {
         });
         win.webContents.openDevTools();
     }
+
+    // Auto-updater events to send to renderer
+    autoUpdater.on('checking-for-update', () => {
+        win.webContents.send('update-message', 'Checking for update...');
+    });
+    autoUpdater.on('update-available', (info) => {
+        win.webContents.send('update-available', info);
+    });
+    autoUpdater.on('update-not-available', (info) => {
+        win.webContents.send('update-message', 'App is up to date.');
+    });
+    autoUpdater.on('error', (err) => {
+        win.webContents.send('update-error', err.message);
+    });
+    autoUpdater.on('download-progress', (progressObj) => {
+        win.webContents.send('download-progress', progressObj);
+    });
+    autoUpdater.on('update-downloaded', (info) => {
+        win.webContents.send('update-downloaded', info);
+    });
+
+    // Check for updates automatically on startup
+    if (app.isPackaged) {
+        autoUpdater.checkForUpdatesAndNotify();
+    }
 }
 
 app.whenReady().then(() => {
     Menu.setApplicationMenu(null);
     createWindow();
+
+    // Auto Update IPCs
+    ipcMain.handle('check-for-updates', () => {
+        if (!app.isPackaged) {
+            return { message: 'Cannot check for updates in development mode.' };
+        }
+        autoUpdater.checkForUpdatesAndNotify();
+        return { message: 'Checking for updates...' };
+    });
+
+    ipcMain.handle('start-download', () => {
+        autoUpdater.downloadUpdate();
+        return { message: 'Starting download...' };
+    });
+
+    ipcMain.handle('install-update', () => {
+        autoUpdater.quitAndInstall();
+    });
 
     // ... existing IPC handlers ...
     ipcMain.handle('get-users', () => {

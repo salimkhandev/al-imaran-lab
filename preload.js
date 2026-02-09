@@ -26,5 +26,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
     deleteAllTestTemplates: () => ipcRenderer.invoke('delete-all-test-templates'),
     // Printing
     printWindow: () => ipcRenderer.invoke('print-window'),
+
+    // Auto Update
+    checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
+    startDownload: () => ipcRenderer.invoke('start-download'),
+    installUpdate: () => ipcRenderer.invoke('install-update'),
+    onUpdateMessage: (callback) => ipcRenderer.on('update-message', (event, msg) => callback(msg)),
+    onUpdateAvailable: (callback) => ipcRenderer.on('update-available', (event, info) => callback(info)),
+    onUpdateError: (callback) => ipcRenderer.on('update-error', (event, err) => callback(err)),
+    onDownloadProgress: (callback) => ipcRenderer.on('download-progress', (event, progress) => callback(progress)),
+    onUpdateDownloaded: (callback) => ipcRenderer.on('update-downloaded', (event, info) => callback(info)),
 });
 
