@@ -1,7 +1,7 @@
 {
-  "name": "al-imaran-lab",
+  "name": "al-imran-lab",
   "version": "1.0.0",
-  "description": "",
+  "description": "Laboratory Information Management System for Al-Imran Lab",
   "main": "main.js",
   "scripts": {
     "dev": "vite",
@@ -9,17 +9,19 @@
     "build": "vite build",
     "pack": "pnpm run build && electron-builder --dir",
     "dist": "pnpm run build && electron-builder",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "postinstall": "electron-builder install-app-deps"
   },
   "build": {
-    "appId": "com.alimaranlab.app",
-    "productName": "Al-Imaran Lab",
+    "appId": "com.alimranlab.app",
+    "productName": "Al-Imran Lab",
     "icon": "src/assets/app-logo.png",
     "directories": {
       "output": "release"
     },
     "files": [
       "dist/**/*",
+      "src/assets/**/*",
       "main.js",
       "preload.js",
       "database.js",
@@ -41,11 +43,11 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "shortcutName": "Al-Imaran Lab"
+      "shortcutName": "Al-Imran Lab"
     }
   },
   "keywords": [],
-  "author": "Al-Imaran",
+  "author": "Al-Imran",
   "license": "ISC",
   "packageManager": "pnpm@10.27.0",
   "devDependencies": {

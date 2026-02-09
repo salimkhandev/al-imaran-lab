@@ -2,7 +2,9 @@
 
 @theme {
     --font-outfit: "Outfit", sans-serif;
-    --font-inter: "Inter", sans-serif;
+    --font-inter: "Inter", system-ui, -apple-system, sans-serif;
+    --font-stylish: Georgia, "Times New Roman", Times, serif;
+    --font-sub-stylish: Arial, Helvetica, sans-serif;
 }
 
 @layer base {
@@ -164,11 +166,8 @@
         print-color-adjust: exact;
     }
 
-    /* MAINTAIN VITAL REPORT BORDERS */
-    .border-slate-900,
-    .border-b-4,
-    .border-b-2,
-    .border-b {
+    /* MAINTAIN VITAL REPORT BORDERS - Relax forced black for subtle headers */
+    .border-b-4 {
         border-color: #0f172a !important;
     }
 
@@ -178,11 +177,17 @@
         border-bottom-width: 1px !important;
     }
 
-    /* Remove the full-width header overrides that were breaking the text-width style */
+    /* Only strip borders from header inputs in print */
+    .a4-page .header-input {
+        border-bottom-color: transparent !important;
+        border-bottom: none !important;
+        outline: none !important;
+    }
+
+    /* Ensure report table headers keep their background and layout but allow borders */
     .report-table-header {
         background-color: transparent !important;
         border-top: none !important;
-        border-bottom: none !important;
     }
 }
 

@@ -3,6 +3,7 @@ import { IoClose } from 'react-icons/io5';
 import TestTemplateForm from './components/TestTemplateForm';
 import ReportWorkspace from './components/ReportWorkspace';
 import ReportHistory from './components/ReportHistory';
+import SplashScreen from './components/SplashScreen';
 
 function App() {
     // ... existing states ...
@@ -11,6 +12,7 @@ function App() {
     const [editingTemplate, setEditingTemplate] = useState(null);
     const [refreshKey, setRefreshKey] = useState(0);
     const [currentView, setCurrentView] = useState('composer'); // 'composer' or 'history'
+    const [isLoading, setIsLoading] = useState(true);
 
     // Global Refresh Trigger
     const triggerRefresh = () => setRefreshKey(prev => prev + 1);
@@ -38,6 +40,10 @@ function App() {
         setIsFormOpen(false);
         triggerRefresh();
     };
+
+    if (isLoading) {
+        return <SplashScreen onComplete={() => setIsLoading(false)} />;
+    }
 
     if (currentView === 'history') {
         return (

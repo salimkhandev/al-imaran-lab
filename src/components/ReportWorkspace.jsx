@@ -36,8 +36,15 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
     }, []);
     const [searchTerm, setSearchTerm] = useState("");
     const [labInfo, setLabInfo] = useState({
-        name: "AL-IMRAN",
-        brand: "MEDICAL STORE, DENTAL CLINIC AND LABORATORY",
+        name: localStorage.getItem('labName') || "AL-IMRAN",
+        brand: localStorage.getItem('labBrand') || "MEDICAL STORE, DENTAL CLINIC AND LABORATORY",
+    });
+
+    const [addressInfo, setAddressInfo] = useState({
+        line1: localStorage.getItem('addressLine1') || "Al-Madina Public School",
+        line2: localStorage.getItem('addressLine2') || "Luqman Banda",
+        phone1: localStorage.getItem('addressPhone1') || "+880 1234 567890",
+        phone2: localStorage.getItem('addressPhone2') || "+880 1234 567890"
     });
 
 
@@ -86,6 +93,12 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
                 const data = JSON.parse(result.report_data);
                 setPatientInfo(data.patientInfo || { name: "", id: "", age: "", gender: "", date: "", labNo: "", refBy: "" });
                 setLabInfo(data.labInfo || {});
+                setAddressInfo(data.addressInfo || {
+                    line1: localStorage.getItem('addressLine1') || "Al-Madina Public School",
+                    line2: localStorage.getItem('addressLine2') || "Luqman Banda",
+                    phone1: localStorage.getItem('addressPhone1') || "+880 1234 567890",
+                    phone2: localStorage.getItem('addressPhone2') || "+880 1234 567890"
+                });
                 setActiveReportLines(data.activeReportLines || []);
             }
         } catch (err) {
@@ -127,9 +140,9 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
                 showUnit: meta.showUnit !== false,
                 showValue: meta.showValue !== false,
                 showResult: meta.showResult !== false,
-                testLabel: meta.testLabel || "Investigation",
+                testLabel: meta.testLabel || "Test",
                 unitLabel: meta.unitLabel || "Unit",
-                valueLabel: meta.valueLabel || "Reference Range",
+                valueLabel: meta.valueLabel || "Normal Value",
                 resultLabel: meta.resultLabel || "Result"
             };
 
@@ -254,7 +267,31 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
     };
 
     const handleLabChange = (field, value) => {
-        setLabInfo(prev => ({ ...prev, [field]: value }));
+        setLabInfo(prev => {
+            const updated = { ...prev, [field]: value };
+            if (field === 'name') {
+                localStorage.setItem('labName', value);
+            } else if (field === 'brand') {
+                localStorage.setItem('labBrand', value);
+            }
+            return updated;
+        });
+    };
+
+    const handleAddressChange = (field, value) => {
+        setAddressInfo(prev => {
+            const updated = { ...prev, [field]: value };
+            if (field === 'line1') {
+                localStorage.setItem('addressLine1', value);
+            } else if (field === 'line2') {
+                localStorage.setItem('addressLine2', value);
+            } else if (field === 'phone1') {
+                localStorage.setItem('addressPhone1', value);
+            } else if (field === 'phone2') {
+                localStorage.setItem('addressPhone2', value);
+            }
+            return updated;
+        });
     };
 
     const handlePatientChange = (field, value) => {
@@ -334,6 +371,7 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
             report_data: {
                 patientInfo,
                 labInfo,
+                addressInfo,
                 activeReportLines
             }
         };
@@ -391,14 +429,14 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
                     id: currentReportId,
                     patient_name: patientInfo.name,
                     patient_id: patientInfo.id,
-                    report_data: { patientInfo, labInfo, activeReportLines }
+                    report_data: { patientInfo, labInfo, addressInfo, activeReportLines }
                 };
 
                 // Validate before saving
                 if (!patientInfo.name || activeReportLines.length === 0) {
                     Swal.fire({
                         title: 'Missing Data',
-                        text: 'Please enter patient name and add modules before printing.',
+                        text: 'Please enter patient name.',
                         icon: 'warning',
                         confirmButtonColor: '#0f172a'
                     });
@@ -598,6 +636,16 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
             labNo: "",
             refBy: localStorage.getItem('lastRefBy') || ""
         });
+        setLabInfo({
+            name: localStorage.getItem('labName') || "AL-IMRAN",
+            brand: localStorage.getItem('labBrand') || "MEDICAL STORE, DENTAL CLINIC AND LABORATORY",
+        });
+        setAddressInfo({
+            line1: localStorage.getItem('addressLine1') || "Al-Madina Public School",
+            line2: localStorage.getItem('addressLine2') || "Luqman Banda",
+            phone1: localStorage.getItem('addressPhone1') || "+880 1234 567890",
+            phone2: localStorage.getItem('addressPhone2') || "+880 1234 567890"
+        });
         setIsHistoryMode(false);
     };
 
@@ -758,25 +806,77 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
         return pages.map((pageLines, pageIdx) => (
             <div key={pageIdx} className="a4-page mb-10 mx-auto">
                 {/* LAB LETTERHEAD - Professional Pathology Style */}
-                <div className="border-b-4 border-slate-900 pb-4 mb-4 relative">
-                    <div className="flex justify-between items-start">
-                        <div className="flex gap-4 items-start">
-                            <img src={docLogo} alt="Lab Logo" className="h-32 w-auto object-contain flex-shrink-0" />
-                            <div className="text-left flex-1">
-                                <h1 className="text-3xl font-black text-slate-900 uppercase leading-tight">
-                                    {labInfo.name || "AL-IMRAN"}
-                                </h1>
-                                <p className="text-sm font-bold text-slate-800 uppercase leading-tight mt-1">
-                                    {labInfo.brand || "LABORATORY"}
-                                </p>
-                            </div>
+                <div className="pb-6 mb-4 relative">
+                    <div className="flex justify-between items-start gap-4 mb-4">
+                        {/* Left: Logo */}
+                        <div className="flex-shrink-0 -mt-8">
+                            <img
+                                src={docLogo}
+                                alt="Lab Logo"
+                                className="h-[120px] w-auto object-contain"
+                            />
                         </div>
-                        <div className="text-left text-[8px] font-bold text-slate-600 space-y-0.5">
-                            <p>Al-Madina Public School</p>
-                            <p>Luqman Banda</p>
-                            <p>PHONE: +880 1234 567890</p>
+
+                        {/* Center: Lab Name & Brand */}
+                        <div className="flex-1 flex flex-col items-center text-center px-2 -space-y-2">
+                            <input
+                                type="text"
+                                value={labInfo.name}
+                                readOnly={isHistoryMode}
+                                onChange={(e) => handleLabChange('name', e.target.value)}
+                                className={`header-input text-5xl font-black text-slate-900 uppercase tracking-widest leading-tight bg-transparent outline-none w-full text-center border-none transition-all font-serif ${!isHistoryMode && 'hover:bg-slate-50 focus:bg-slate-50'}`}
+                                placeholder="LAB NAME"
+                            />
+                            <input
+                                type="text"
+                                value={labInfo.brand}
+                                readOnly={isHistoryMode}
+                                onChange={(e) => handleLabChange('brand', e.target.value)}
+                                className={`header-input text-[11px] font-bold text-slate-700 uppercase leading-tight bg-transparent outline-none w-full text-center border-none transition-all font-sans ${!isHistoryMode && 'hover:bg-slate-50 focus:bg-slate-50'}`}
+                                placeholder="LAB BRAND DESCRIPTION"
+                            />
+                        </div>
+
+                        {/* Right: Address & Phone */}
+                        <div className="flex-shrink-0 flex flex-col text-left space-y-0.5 min-w-[160px]">
+                            <div className="flex flex-col -space-y-1.5 mb-0.5">
+                                <input
+                                    type="text"
+                                    value={addressInfo.line1}
+                                    readOnly={isHistoryMode}
+                                    onChange={(e) => handleAddressChange('line1', e.target.value)}
+                                    className={`header-input text-[11px] font-bold text-slate-600 bg-transparent outline-none w-full text-left border-b border-transparent transition-all font-sans ${!isHistoryMode && 'hover:border-slate-300 focus:border-slate-600'}`}
+                                    placeholder="ADDRESS LINE 1"
+                                />
+                                <input
+                                    type="text"
+                                    value={addressInfo.line2}
+                                    readOnly={isHistoryMode}
+                                    onChange={(e) => handleAddressChange('line2', e.target.value)}
+                                    className={`header-input text-[11px] font-bold text-slate-600 bg-transparent outline-none w-full text-left border-b border-transparent transition-all font-sans ${!isHistoryMode && 'hover:border-slate-300 focus:border-slate-600'}`}
+                                    placeholder="ADDRESS LINE 2"
+                                />
+                            </div>
+                            <input
+                                type="text"
+                                value={addressInfo.phone1}
+                                readOnly={isHistoryMode}
+                                onChange={(e) => handleAddressChange('phone1', e.target.value)}
+                                className={`header-input text-[11px] font-bold text-slate-600 bg-transparent outline-none w-full text-left border-b border-transparent transition-all font-sans ${!isHistoryMode && 'hover:border-slate-300 focus:border-slate-600'}`}
+                                placeholder="PHONE 1"
+                            />
+                            <input
+                                type="text"
+                                value={addressInfo.phone2}
+                                readOnly={isHistoryMode}
+                                onChange={(e) => handleAddressChange('phone2', e.target.value)}
+                                className={`header-input text-[11px] font-bold text-slate-600 bg-transparent outline-none w-full text-left border-b border-transparent transition-all font-sans ${!isHistoryMode && 'hover:border-slate-300 focus:border-slate-600'}`}
+                                placeholder="PHONE 2"
+                            />
                         </div>
                     </div>
+                    {/* Professional Thick Separator Line */}
+                    <div className="h-1 bg-slate-900 w-full mb-2"></div>
                 </div>
 
                 {/* PATIENT INFO HEADER - Tabular Professional Style */}
@@ -784,20 +884,20 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
                     <div className="space-y-1 pr-4 border-r border-slate-200">
                         <div className="grid grid-cols-[80px_1fr] items-center">
                             <span className="font-black text-slate-900 uppercase text-[7px] tracking-widest">Name:</span>
-                            <input type="text" value={patientInfo.name} readOnly={isHistoryMode} onChange={(e) => handlePatientChange('name', e.target.value)} className={`font-black text-slate-900 uppercase text-[10px] bg-transparent outline-none w-full border-b border-transparent transition-all px-1 ${!isHistoryMode && 'focus:border-slate-900 hover:bg-slate-50'}`} placeholder="ENTER PATIENT NAME" />
+                            <input type="text" value={patientInfo.name} readOnly={isHistoryMode} onChange={(e) => handlePatientChange('name', e.target.value)} className={`header-input font-black text-slate-900 uppercase text-[10px] bg-transparent outline-none w-full border-b border-transparent transition-all px-1 ${!isHistoryMode && 'focus:border-slate-900 hover:bg-slate-50'}`} placeholder="ENTER PATIENT NAME" />
                         </div>
                         <div className="grid grid-cols-[80px_1fr] items-center">
                             <span className="font-black text-slate-900 uppercase text-[7px] tracking-widest">Age/Sex:</span>
                             <div className="flex gap-1">
-                                <input type="text" value={patientInfo.age} readOnly={isHistoryMode} onChange={(e) => handlePatientChange('age', e.target.value)} className={`font-black text-slate-900 uppercase text-[10px] bg-transparent outline-none w-10 border-b border-transparent transition-all px-1 ${!isHistoryMode && 'focus:border-slate-900 hover:bg-slate-50'}`} placeholder="Age" />
+                                <input type="text" value={patientInfo.age} readOnly={isHistoryMode} onChange={(e) => handlePatientChange('age', e.target.value)} className={`header-input font-black text-slate-900 uppercase text-[10px] bg-transparent outline-none w-10 border-b border-transparent transition-all px-1 ${!isHistoryMode && 'focus:border-slate-900 hover:bg-slate-50'}`} placeholder="Age" />
                                 <div className="text-slate-300">/</div>
                                 {isHistoryMode ? (
-                                    <input type="text" value={patientInfo.gender} readOnly className="font-black text-slate-900 uppercase text-[10px] bg-transparent outline-none w-full border-b border-transparent transition-all px-1" />
+                                    <input type="text" value={patientInfo.gender} readOnly className="header-input font-black text-slate-900 uppercase text-[10px] bg-transparent outline-none w-full border-b border-transparent transition-all px-1" />
                                 ) : (
                                     <select
                                         value={patientInfo.gender}
                                         onChange={(e) => handlePatientChange('gender', e.target.value)}
-                                        className="font-black text-slate-900 uppercase text-[10px] bg-transparent outline-none w-full border-b border-transparent focus:border-slate-900 transition-all px-1 cursor-pointer hover:bg-slate-50 appearance-none"
+                                        className="header-input font-black text-slate-900 uppercase text-[10px] bg-transparent outline-none w-full border-b border-transparent focus:border-slate-900 transition-all px-1 cursor-pointer hover:bg-slate-50 appearance-none"
                                     >
                                         <option value="Male">Male</option>
                                         <option value="Female">Female</option>
@@ -807,22 +907,22 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
                         </div>
                         <div className="grid grid-cols-[80px_1fr] items-center">
                             <span className="font-black text-slate-900 uppercase text-[7px] tracking-widest">Pat. ID:</span>
-                            <input type="text" value={patientInfo.id} readOnly={isHistoryMode} onChange={(e) => handlePatientChange('id', e.target.value)} className={`font-black text-slate-900 uppercase text-[10px] bg-transparent outline-none w-full border-b border-transparent transition-all px-1 ${!isHistoryMode && 'focus:border-slate-900 hover:bg-slate-50'}`} />
+                            <input type="text" value={patientInfo.id} readOnly={isHistoryMode} onChange={(e) => handlePatientChange('id', e.target.value)} className={`header-input font-black text-slate-900 uppercase text-[10px] bg-transparent outline-none w-full border-b border-transparent transition-all px-1 ${!isHistoryMode && 'focus:border-slate-900 hover:bg-slate-50'}`} />
                         </div>
                     </div>
                     <div className="space-y-1 pl-4">
                         <div className="grid grid-cols-[80px_1fr] items-center">
                             <span className="font-black text-slate-900 uppercase text-[7px] tracking-widest">Date:</span>
-                            <input type="text" value={patientInfo.date} readOnly={isHistoryMode} onChange={(e) => handlePatientChange('date', e.target.value)} className={`font-black text-slate-900 uppercase text-[10px] bg-transparent outline-none w-full border-b border-transparent transition-all px-1 ${!isHistoryMode && 'focus:border-slate-900 hover:bg-slate-50'}`} />
+                            <input type="text" value={patientInfo.date} readOnly={isHistoryMode} onChange={(e) => handlePatientChange('date', e.target.value)} className={`header-input font-black text-slate-900 uppercase text-[10px] bg-transparent outline-none w-full border-b border-transparent transition-all px-1 ${!isHistoryMode && 'focus:border-slate-900 hover:bg-slate-50'}`} />
                         </div>
                         <div className="grid grid-cols-[80px_1fr] items-center">
                             <span className="font-black text-slate-900 uppercase text-[7px] tracking-widest">Time:</span>
-                            <input type="text" value={patientInfo.time || ""} readOnly={isHistoryMode} onChange={(e) => handlePatientChange('time', e.target.value)} className={`font-black text-slate-900 uppercase text-[10px] bg-transparent outline-none w-full border-b border-transparent transition-all px-1 ${!isHistoryMode && 'focus:border-slate-900 hover:bg-slate-50'}`} />
+                            <input type="text" value={patientInfo.time || ""} readOnly={isHistoryMode} onChange={(e) => handlePatientChange('time', e.target.value)} className={`header-input font-black text-slate-900 uppercase text-[10px] bg-transparent outline-none w-full border-b border-transparent transition-all px-1 ${!isHistoryMode && 'focus:border-slate-900 hover:bg-slate-50'}`} />
                         </div>
 
                         <div className="grid grid-cols-[80px_1fr] items-center">
                             <span className="font-black text-slate-900 uppercase text-[7px] tracking-widest">Ref By:</span>
-                            <input type="text" value={patientInfo.refBy} readOnly={isHistoryMode} onChange={(e) => handlePatientChange('refBy', e.target.value)} className={`font-black text-slate-900 uppercase text-[10px] bg-transparent outline-none w-full border-b border-transparent transition-all px-1 ${!isHistoryMode && 'focus:border-slate-900 hover:bg-slate-50'}`} />
+                            <input type="text" value={patientInfo.refBy} readOnly={isHistoryMode} onChange={(e) => handlePatientChange('refBy', e.target.value)} className={`header-input font-black text-slate-900 uppercase text-[10px] bg-transparent outline-none w-full border-b border-transparent transition-all px-1 ${!isHistoryMode && 'focus:border-slate-900 hover:bg-slate-50'}`} />
                         </div>
                     </div>
                 </div>
@@ -835,14 +935,14 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
                                 const config = line.columnConfig || {};
                                 return (
                                     <div key={idx} id={line.batchId} className="mt-10 mb-8 text-center relative group/header">
-                                        <div className="inline-block border-b-2 border-slate-900 pb-1.5 px-4 mb-2">
-                                            <h2 className="text-2xl font-black uppercase tracking-[0.25em] text-slate-900">
+                                        <div className="inline-block border-b border-slate-400 pb-1.5 px-4 mb-2">
+                                            <h2 className="text-[16px] font-black uppercase tracking-[0.25em] text-slate-900">
                                                 {line.text}
                                             </h2>
                                         </div>
                                         {line.subtitle && (
                                             <div className="flex justify-center mt-2">
-                                                <div className="inline-block border-b border-slate-400 pb-0.5 px-3">
+                                                <div className="inline-block border-b border-slate-300 pb-0.5 px-3">
                                                     <div className="text-[10px] font-bold text-slate-700 uppercase tracking-[0.3em] text-center">
                                                         {line.subtitle}
                                                     </div>
@@ -862,10 +962,10 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
 
                                         {/* DYNAMIC COLUMN HEADERS - Only show on first instance, not on repeated (Contd.) headers */}
                                         {!line.isRepeated && (
-                                            <div style={getReportGridStyle(config)} className="report-table-header items-center mt-8 border-b-2 border-slate-900 pb-2 mb-2 font-black text-[9px] uppercase text-slate-500 tracking-widest">
-                                                {config.showTest && <span className="text-left">{config.testLabel || "Investigation"}</span>}
+                                            <div style={getReportGridStyle(config)} className="report-table-header items-center mt-8 border-b border-slate-400 pb-2 mb-2 font-black text-[9px] uppercase text-slate-500 tracking-widest">
+                                                {config.showTest && <span className="text-left">{config.testLabel || "Test"}</span>}
                                                 {config.showUnit && <span className="text-center">{config.unitLabel || "Unit"}</span>}
-                                                {config.showValue && <span className="text-center">{config.valueLabel || "Reference Range"}</span>}
+                                                {config.showValue && <span className="text-center">{config.valueLabel || "Normal Value"}</span>}
                                                 {config.showResult && <span className="text-right whitespace-nowrap">{config.resultLabel || "Result"}</span>}
                                             </div>
                                         )}
@@ -909,7 +1009,7 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
                                     <div key={idx} className="mt-8 mb-8 page-break-inside-avoid px-2">
                                         {line.title && (
                                             <div className="flex justify-center mb-6">
-                                                <div className="inline-block border-b border-slate-900 pb-1 px-3">
+                                                <div className="inline-block border-b border-slate-400 pb-1 px-3">
                                                     <div className="text-[12px] font-black uppercase tracking-[0.2em] text-slate-900 text-center italic">
                                                         {line.title}
                                                     </div>
@@ -918,7 +1018,7 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
                                         )}
                                         <div className="w-full">
                                             {/* Dynamic Matrix Header */}
-                                            <div className="flex border-b-2 border-slate-900 pb-2 mb-2">
+                                            <div className="flex border-b border-slate-400 pb-2 mb-2">
                                                 <div className="w-1/3 font-black text-[10px] uppercase text-slate-500 tracking-widest pl-2">{line.rowLabel || "Test"}</div>
                                                 <div className="flex-1 flex justify-around">
                                                     {(line.headers || []).map((h, hi) => (
@@ -942,7 +1042,7 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
                                                                     <select
                                                                         value={val || ""}
                                                                         onChange={(e) => handleMatrixValueChange(idx, ri, ci, e.target.value)}
-                                                                        className="w-full text-center border-b border-slate-200 font-bold bg-transparent transition-all text-[11px] outline-none hover:border-slate-900 appearance-none cursor-pointer focus:border-blue-500 text-slate-900"
+                                                                        className="w-full text-center border-b border-transparent font-bold bg-transparent transition-all text-[11px] outline-none hover:border-slate-500 appearance-none cursor-pointer focus:border-blue-500 text-slate-900"
                                                                     >
                                                                         <option value="">---</option>
                                                                         {(line.resultOptions || [])
@@ -961,7 +1061,7 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
                                                                         type="text"
                                                                         value={val || ""}
                                                                         onChange={(e) => handleMatrixValueChange(idx, ri, ci, e.target.value)}
-                                                                        className="w-full text-center border-b border-slate-200 font-bold bg-transparent transition-all text-[11px] outline-none hover:border-slate-900 focus:border-blue-500 text-slate-900"
+                                                                        className="w-full text-center border-b border-transparent font-bold bg-transparent transition-all text-[11px] outline-none hover:border-slate-500 focus:border-blue-500 text-slate-900"
                                                                         placeholder="---"
                                                                     />
                                                                 )}
@@ -986,7 +1086,7 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
                                     <div key={idx} className="mt-8 mb-4">
                                         {hasTitle && (
                                             <div className="flex justify-center mb-1">
-                                                <div className="inline-block border-b border-slate-900 pb-0.5 px-2">
+                                                <div className="inline-block border-b border-slate-400 pb-0.5 px-2">
                                                     <div className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-900 text-center">
                                                         {line.text}
                                                     </div>
@@ -995,7 +1095,7 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
                                         )}
                                         {hasSubtext && (
                                             <div className="flex justify-center mt-2">
-                                                <div className="inline-block border-b border-slate-400 pb-0.5 px-2">
+                                                <div className="inline-block border-b border-slate-300 pb-0.5 px-2">
                                                     <div className={`${hasTitle ? 'text-[9px] font-bold text-slate-600 uppercase tracking-[0.3em]' : 'text-[10px] font-black uppercase tracking-[0.15em] text-slate-900'} text-center`}>
                                                         {line.subtext}
                                                     </div>
@@ -1009,7 +1109,7 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
                                                 <div className="flex-1"></div>
                                                 {line.gridLabels.map((label, gIdx) => (
                                                     <div key={gIdx} className="w-20 text-center">
-                                                        <div className="text-[9px] font-black uppercase text-slate-900 border-b-2 border-slate-900 pb-1">
+                                                        <div className="text-[9px] font-black uppercase text-slate-900 border-b border-slate-400 pb-1">
                                                             {label}
                                                         </div>
                                                     </div>
@@ -1028,7 +1128,7 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
                             return (
                                 <div key={idx} style={getReportGridStyle(line.columnConfig)} className="report-row items-center border-b border-slate-100 py-2 hover:bg-slate-50/50 transition-colors group/row">
                                     {line.columnConfig?.showTest && (
-                                        <div className="font-black text-slate-900 uppercase text-[10px] leading-tight break-words py-1">
+                                        <div className="font-black text-slate-900 uppercase text-[8px] leading-tight break-words py-1">
                                             {line.name}
                                         </div>
                                     )}
@@ -1098,7 +1198,7 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
                                                 <select
                                                     value={line.result || ""}
                                                     onChange={(e) => handleLineChange(idx, 'result', e.target.value)}
-                                                    className="w-full text-right border-b border-slate-100 font-black bg-transparent transition-all text-[11px] outline-none hover:border-slate-300 appearance-none cursor-pointer"
+                                                    className="w-full text-right border-transparent font-black bg-transparent transition-all text-[11px] outline-none hover:border-slate-200 appearance-none cursor-pointer"
                                                 >
                                                     {(line.resultOptions || []).map((opt, oIdx) => (
                                                         <option key={oIdx} value={opt}>{opt}</option>
@@ -1110,7 +1210,7 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
                                                     readOnly={isHistoryMode}
                                                     rows={1}
                                                     onChange={(e) => handleLineChange(idx, 'result', e.target.value)}
-                                                    className={`w-full text-right border-b outline-none font-black transition-all resize-none overflow-hidden py-0.5 ${isHistoryMode ? 'border-transparent' : 'border-slate-100 hover:border-slate-300'} ${!line.result && !isHistoryMode ? 'bg-slate-200' : 'bg-transparent'} no-print-bg text-black ${(line.result || "").length > 25 ? 'text-[7px] leading-[1.1]' :
+                                                    className={`w-full text-right outline-none font-black transition-all resize-none overflow-hidden py-0.5 ${isHistoryMode ? 'border-transparent' : 'hover:border-slate-200'} ${!line.result && !isHistoryMode ? 'bg-slate-200' : 'bg-transparent'} no-print-bg text-black ${(line.result || "").length > 25 ? 'text-[7px] leading-[1.1]' :
                                                         (line.result || "").length > 15 ? 'text-[9px] leading-tight' :
                                                             'text-[11px]'
                                                         }`}
@@ -1177,8 +1277,8 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
                                 }
                             }}
                             className={`px-3 py-2 rounded-lg shadow-lg font-black text-[8px] uppercase tracking-wider transition-all flex items-center justify-center gap-2 border active:scale-95 ${isHistoryMode
-                                ? 'bg-emerald-600 text-white border-emerald-500 hover:bg-emerald-700'
-                                : 'bg-indigo-600 text-white border-indigo-500 hover:bg-indigo-700'
+                                ? 'bg-indigo-600 text-white border-indigo-500 hover:bg-indigo-700'
+                                : 'bg-emerald-600 text-white border-emerald-500 hover:bg-emerald-700'
                                 }`}
                             title={isHistoryMode ? "Perform New Test" : "View History"}
                         >
@@ -1190,7 +1290,7 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
                             <>
                                 <button
                                     onClick={() => handleReset()}
-                                    className="p-2 bg-white border border-slate-200 text-slate-400 rounded-lg shadow-lg hover:text-indigo-600 hover:scale-110 active:scale-95 transition-all flex items-center justify-center outline-none"
+                                    className="p-2 bg-white border border-slate-200 text-slate-400 rounded-lg shadow-lg hover:text-emerald-600 hover:scale-110 active:scale-95 transition-all flex items-center justify-center outline-none"
                                     title="Clear Canvas (Reset)"
                                 >
                                     <IoRefreshOutline className="w-3.5 h-3.5" />
@@ -1199,7 +1299,7 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
                                 <div className="relative global-settings-menu">
                                     <button
                                         onClick={() => setIsMenuOpen(!isMenuOpen)}
-                                        className={`p-2 rounded-lg shadow-lg transition-all flex items-center justify-center border outline-none ${isMenuOpen ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-400 border-slate-200 hover:text-slate-900'}`}
+                                        className={`p-2 rounded-lg shadow-lg transition-all flex items-center justify-center border outline-none ${isMenuOpen ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-400 border-slate-200 hover:text-emerald-600'}`}
                                         title="Database Management"
                                     >
                                         <IoEllipsisVertical className="w-3.5 h-3.5" />
@@ -1212,14 +1312,14 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
                                             </div>
                                             <button
                                                 onClick={() => { handleExport(); setIsMenuOpen(false); }}
-                                                className="w-full text-left px-4 py-3 text-[11px] font-black text-slate-700 hover:bg-slate-900 hover:text-white transition-all flex items-center gap-3"
+                                                className="w-full text-left px-4 py-3 text-[11px] font-black text-slate-700 hover:bg-emerald-600 hover:text-white transition-all flex items-center gap-3"
                                             >
-                                                <div className="w-2 h-2 rounded-full bg-indigo-400"></div>
+                                                <div className="w-2 h-2 rounded-full bg-emerald-400"></div>
                                                 Export Data
                                             </button>
                                             <button
                                                 onClick={() => { handleImport(); setIsMenuOpen(false); }}
-                                                className="w-full text-left px-4 py-3 text-[11px] font-black text-slate-700 hover:bg-slate-900 hover:text-white transition-all flex items-center gap-3"
+                                                className="w-full text-left px-4 py-3 text-[11px] font-black text-slate-700 hover:bg-emerald-600 hover:text-white transition-all flex items-center gap-3"
                                             >
                                                 <div className="w-2 h-2 rounded-full bg-emerald-400"></div>
                                                 Import Data
@@ -1275,7 +1375,7 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
                         <button
                             onClick={onAdd}
                             disabled={isHistoryMode}
-                            className={`p-2.5 bg-slate-900 text-white rounded-xl shadow-md hover:bg-black transition-all active:scale-90 ${isHistoryMode ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            className={`p-2.5 bg-emerald-600 text-white rounded-xl shadow-md hover:bg-emerald-700 transition-all active:scale-90 ${isHistoryMode ? 'opacity-50 cursor-not-allowed' : ''}`}
                             title={isHistoryMode ? "Cannot add templates in history mode" : "Create New Template"}
                         >
                             <IoAdd className="w-4 h-4" />
@@ -1284,18 +1384,18 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
 
                     <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-2">
                         {isHistoryMode ? (
-                            <div className="bg-indigo-50 border-2 border-indigo-200 rounded-2xl p-6 text-center">
-                                <div className="w-16 h-16 bg-indigo-100 rounded-2xl mx-auto mb-4 flex items-center justify-center">
-                                    <IoLockClosed className="w-8 h-8 text-indigo-600" />
+                            <div className="bg-emerald-50 border-2 border-emerald-200 rounded-2xl p-6 text-center">
+                                <div className="w-16 h-16 bg-emerald-100 rounded-2xl mx-auto mb-4 flex items-center justify-center">
+                                    <IoLockClosed className="w-8 h-8 text-emerald-600" />
                                 </div>
-                                <h3 className="text-[10px] font-black text-indigo-900 uppercase tracking-wider mb-2">Finalized Report</h3>
-                                <p className="text-[9px] font-bold text-indigo-700 leading-relaxed">
+                                <h3 className="text-[10px] font-black text-emerald-900 uppercase tracking-wider mb-2">Finalized Report</h3>
+                                <p className="text-[9px] font-bold text-emerald-700 leading-relaxed">
                                     This is a previous test report and cannot be modified. To create a new report, click "Back to Composer" above.
                                 </p>
                             </div>
                         ) : (
                             filteredTemplates.map((t, index) => (
-                                <div key={t.id} className="group relative flex items-center bg-white hover:bg-indigo-50 rounded-xl border border-slate-100 hover:border-indigo-300 shadow-sm hover:shadow-md transition-all pr-2 overflow-visible">
+                                <div key={t.id} className="group relative flex items-center bg-white hover:bg-emerald-50 rounded-xl border border-slate-100 hover:border-emerald-300 shadow-sm hover:shadow-md transition-all pr-2 overflow-visible">
                                     <button
                                         onClick={() => addToReport(t)}
                                         className="flex-1 text-left p-3 flex flex-col gap-0.5 overflow-hidden active:scale-[0.98] transition-transform"
@@ -1323,7 +1423,7 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
                                                         <IoClose className="w-2.5 h-2.5" />
                                                     </button>
                                                 </div>
-                                                <button onClick={(e) => { e.stopPropagation(); onEdit(t); setActiveMenuId(null); }} className="w-full text-left px-3 py-1.5 text-[9px] font-black text-slate-600 hover:bg-slate-900 hover:text-white flex items-center gap-2">
+                                                <button onClick={(e) => { e.stopPropagation(); onEdit(t); setActiveMenuId(null); }} className="w-full text-left px-3 py-1.5 text-[9px] font-black text-slate-600 hover:bg-emerald-600 hover:text-white flex items-center gap-2">
                                                     <div className="w-1 h-1 rounded-full bg-slate-400 group-hover:bg-white"></div>
                                                     <span>Edit Test</span>
                                                 </button>
@@ -1349,7 +1449,7 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
 
                             <button
                                 onClick={handlePrintWorkflow}
-                                className="w-full py-4 bg-slate-900 text-white rounded-xl font-black text-[10px] uppercase tracking-[0.2em] shadow-lg transition-all hover:bg-black active:scale-95 flex items-center justify-center gap-3"
+                                className="w-full py-4 bg-indigo-600 text-white rounded-xl font-black text-[10px] uppercase tracking-[0.2em] shadow-lg shadow-indigo-600/20 transition-all hover:bg-indigo-700 active:scale-95 flex items-center justify-center gap-3 border border-indigo-500/20"
                             >
                                 <IoPrint className="w-4 h-4" />
                                 {isHistoryMode ? "Print Report" : "Print & Save Report"}

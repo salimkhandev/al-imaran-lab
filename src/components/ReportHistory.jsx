@@ -200,7 +200,7 @@ export default function ReportHistory({ onSelectReport, onBack }) {
                             <div key={date} className="space-y-4">
                                 {/* DATE HEADER */}
                                 <div className="flex items-center gap-4">
-                                    <div className="bg-gradient-to-r from-slate-900 to-slate-700 text-white px-6 py-2 rounded-xl shadow-lg">
+                                    <div className="bg-gradient-to-r from-emerald-600 to-emerald-800 text-white px-6 py-2 rounded-xl shadow-lg">
                                         <div className="flex items-center gap-3">
                                             <IoCalendar className="w-4 h-4" />
                                             <span className="text-sm font-black uppercase tracking-wider">{date}</span>
@@ -222,7 +222,7 @@ export default function ReportHistory({ onSelectReport, onBack }) {
                                             <div
                                                 key={report.id}
                                                 onClick={() => onSelectReport(report.id)}
-                                                className="group bg-white border border-slate-200 rounded-xl p-4 hover:shadow-lg hover:border-indigo-500 transition-all cursor-pointer"
+                                                className="group bg-white border border-slate-200 rounded-xl p-4 hover:shadow-lg hover:border-emerald-500 transition-all cursor-pointer"
                                             >
                                                 <div className="flex items-center justify-between gap-4">
                                                     <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-4 flex-1 overflow-hidden">
@@ -239,7 +239,6 @@ export default function ReportHistory({ onSelectReport, onBack }) {
                                                             <span className="text-slate-900">{summary.patientInfo.time || "N/A"}</span>
                                                         </div>
                                                     </div>
-
                                                     <div className="flex items-center gap-2">
                                                         <button
                                                             onClick={(e) => handleDelete(e, report.id)}
@@ -247,7 +246,7 @@ export default function ReportHistory({ onSelectReport, onBack }) {
                                                         >
                                                             <IoTrash className="w-4 h-4" />
                                                         </button>
-                                                        <div className="p-2 text-slate-300 group-hover:text-indigo-600 transition-colors">
+                                                        <div className="p-2 text-slate-300 group-hover:text-emerald-600 transition-colors">
                                                             <IoArrowForward className="w-4 h-4" />
                                                         </div>
                                                     </div>
