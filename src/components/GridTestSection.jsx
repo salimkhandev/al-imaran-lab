@@ -33,7 +33,7 @@ export default function GridTestSection({ section, tests, isHistoryMode, onResul
                     <div className="w-1/3 font-bold text-[8px] text-slate-800 uppercase tracking-tight pl-2">
                         {test.name}
                     </div>
-                    <div className="flex-1 flex justify-around">
+                    <div className="flex-1 flex j ustify-around">
                         {labels.map((_, lIdx) => (
                             <div key={lIdx} className="w-full px-2">
                                 <input
