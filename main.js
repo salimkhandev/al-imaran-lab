@@ -12,6 +12,8 @@ function createWindow() {
     const win = new BrowserWindow({
         width: 1200,
         height: 800,
+        show: false, // Don't show until content is ready
+        backgroundColor: '#ffffff', // Match splash screen background to avoid flash
         icon: path.join(__dirname, 'src/assets/app-logo.png'),
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),
@@ -20,7 +22,11 @@ function createWindow() {
         },
     });
 
-    win.maximize();
+    // Only show the window after content is fully painted
+    win.once('ready-to-show', () => {
+        win.maximize();
+        win.show();
+    });
 
     if (app.isPackaged) {
         win.loadFile(path.join(__dirname, 'dist/index.html'));

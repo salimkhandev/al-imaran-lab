@@ -1326,7 +1326,11 @@ export default function ReportWorkspace({ initialSelect, onEdit, onAdd }) {
                     )}
                 </div>
 
-
+                {/* Page Footer */}
+                <div className="absolute bottom-10 left-[15mm] right-[15mm] border-t border-slate-100 pt-4 flex justify-between items-center opacity-30 pointer-events-none">
+                    <div className="text-[10px] font-serif italic text-slate-400">Report generated via Al-Imran LIMS</div>
+                    <div className="text-[10px] font-black uppercase text-slate-400">Page {String(pageIdx + 1).padStart(2, '0')}</div>
+                </div>
             </div>
         ));
     };
